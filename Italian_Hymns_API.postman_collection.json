@@ -1,0 +1,687 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "Italian Hymns API",
+		"description": "API collection for the Italian LDS Hymns selection system with smart ward-based hymn management",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12345678"
+	},
+	"item": [
+		{
+			"name": "Health & Info",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"stats"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tags",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/tags",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tags"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Basic Hymn Selection",
+			"item": [
+				{
+					"name": "Get Hymns - Default Sunday",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymns",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymns"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Hymns - First Sunday (3 hymns)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymns?prima_domenica=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymns"
+							],
+							"query": [
+								{
+									"key": "prima_domenica",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Hymns - Christmas Sunday",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymns?domenica_festiva=true&tipo_festivita=natale",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymns"
+							],
+							"query": [
+								{
+									"key": "domenica_festiva",
+									"value": "true"
+								},
+								{
+									"key": "tipo_festivita",
+									"value": "natale"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Hymns - Easter Sunday",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymns?domenica_festiva=true&tipo_festivita=pasqua",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymns"
+							],
+							"query": [
+								{
+									"key": "domenica_festiva",
+									"value": "true"
+								},
+								{
+									"key": "tipo_festivita",
+									"value": "pasqua"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Hymns - First Sunday Christmas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymns?prima_domenica=true&domenica_festiva=true&tipo_festivita=natale",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymns"
+							],
+							"query": [
+								{
+									"key": "prima_domenica",
+									"value": "true"
+								},
+								{
+									"key": "domenica_festiva",
+									"value": "true"
+								},
+								{
+									"key": "tipo_festivita",
+									"value": "natale"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Smart Hymn Selection (Ward-based)",
+			"item": [
+				{
+					"name": "Get Smart Hymns - Muggio Ward",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymns_smart?ward_name=Muggio",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymns_smart"
+							],
+							"query": [
+								{
+									"key": "ward_name",
+									"value": "Muggio"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Smart Hymns - Merate Ward (First Sunday)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymns_smart?ward_name=Merate&prima_domenica=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymns_smart"
+							],
+							"query": [
+								{
+									"key": "ward_name",
+									"value": "Merate"
+								},
+								{
+									"key": "prima_domenica",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Smart Hymns - Cimiano Ward (Christmas)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymns_smart?ward_name=Cimiano&domenica_festiva=true&tipo_festivita=natale",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymns_smart"
+							],
+							"query": [
+								{
+									"key": "ward_name",
+									"value": "Cimiano"
+								},
+								{
+									"key": "domenica_festiva",
+									"value": "true"
+								},
+								{
+									"key": "tipo_festivita",
+									"value": "natale"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Smart Hymns - Lodi Ward (Easter)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymns_smart?ward_name=Lodi&domenica_festiva=true&tipo_festivita=pasqua",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymns_smart"
+							],
+							"query": [
+								{
+									"key": "ward_name",
+									"value": "Lodi"
+								},
+								{
+									"key": "domenica_festiva",
+									"value": "true"
+								},
+								{
+									"key": "tipo_festivita",
+									"value": "pasqua"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Smart Hymns - Without Saving",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymns_smart?ward_name=Lecco&save_selection=false",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymns_smart"
+							],
+							"query": [
+								{
+									"key": "ward_name",
+									"value": "Lecco"
+								},
+								{
+									"key": "save_selection",
+									"value": "false"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Smart Hymns - Specific Date",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymns_smart?ward_name=Sondrio&selection_date=2025-12-25&domenica_festiva=true&tipo_festivita=natale",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymns_smart"
+							],
+							"query": [
+								{
+									"key": "ward_name",
+									"value": "Sondrio"
+								},
+								{
+									"key": "selection_date",
+									"value": "2025-12-25"
+								},
+								{
+									"key": "domenica_festiva",
+									"value": "true"
+								},
+								{
+									"key": "tipo_festivita",
+									"value": "natale"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Ward Management",
+			"item": [
+				{
+					"name": "Get All Wards",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/wards",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"wards"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Ward History - Muggio",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ward_history/Muggio",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ward_history",
+								"Muggio"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Ward History - Merate (Limited)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ward_history/Merate?limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ward_history",
+								"Merate"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Ward History - Cimiano",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ward_history/Cimiano?limit=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"ward_history",
+								"Cimiano"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Single Hymn Queries",
+			"item": [
+				{
+					"name": "Get Hymn by Number",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymn?number=120",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymn"
+							],
+							"query": [
+								{
+									"key": "number",
+									"value": "120"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Hymn by Category",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymn?category=sacramento",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymn"
+							],
+							"query": [
+								{
+									"key": "category",
+									"value": "sacramento"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Hymn by Tag",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymn?tag=natale",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymn"
+							],
+							"query": [
+								{
+									"key": "tag",
+									"value": "natale"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Hymn by Multiple Criteria",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymn?category=sacramento&tag=gesù cristo",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymn"
+							],
+							"query": [
+								{
+									"key": "category",
+									"value": "sacramento"
+								},
+								{
+									"key": "tag",
+									"value": "gesù cristo"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Error Cases",
+			"item": [
+				{
+					"name": "Festive Sunday without Type (Error)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymns?domenica_festiva=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymns"
+							],
+							"query": [
+								{
+									"key": "domenica_festiva",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Invalid Date Format (Error)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymns_smart?ward_name=Muggio&selection_date=invalid-date",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymns_smart"
+							],
+							"query": [
+								{
+									"key": "ward_name",
+									"value": "Muggio"
+								},
+								{
+									"key": "selection_date",
+									"value": "invalid-date"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Nonexistent Hymn Number",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/get_hymn?number=9999",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"get_hymn"
+							],
+							"query": [
+								{
+									"key": "number",
+									"value": "9999"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8000/api/v1",
+			"type": "string"
+		}
+	]
+}
