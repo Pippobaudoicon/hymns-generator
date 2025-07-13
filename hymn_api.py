@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query
 from typing import List, Optional, Literal
 from enum import Enum
+from fastapi.responses import JSONResponse
 import json
 import random
 import os
@@ -85,6 +86,7 @@ repo = HymnRepository(hymns_data)
 service = HymnService(repo)
 
 
+
 @app.get("/get_hymns")
 def api_get_hymns(
     prima_domenica: bool = Query(False, description="Se true, restituisce 3 inni per la prima domenica (digiuno e testimonianze), altrimenti 4."),
@@ -93,14 +95,19 @@ def api_get_hymns(
 ):
     """Genera una lista di inni secondo le regole. Il secondo inno è sempre dal 'Sacramento'. Se domenica_festiva è true, tipo_festivita è obbligatorio."""
     result = service.generate(prima_domenica, domenica_festiva, tipo_festivita)
+    headers = {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0"
+    }
     if not result:
-        return {"error": "Not enough hymns to generate list or missing 'tipo_festivita' for festive Sunday."}
-    return {
+        return JSONResponse(content={"error": "Not enough hymns to generate list or missing 'tipo_festivita' for festive Sunday."}, headers=headers)
+    return JSONResponse(content={
         "prima_domenica": prima_domenica,
         "domenica_festiva": domenica_festiva,
         "tipo_festivita": tipo_festivita,
         "hymns": result
-    }
+    }, headers=headers)
 
 @app.get("/get_hymn")
 def api_get_hymn(
@@ -116,7 +123,12 @@ def api_get_hymn(
         filtered = [h for h in filtered if h.category.strip().lower() == category.strip().lower()]
     if tag is not None:
         filtered = [h for h in filtered if tag.strip().lower() in h.tags]
+    headers = {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0"
+    }
     if not filtered:
-        return {"error": "No hymn found with the given criteria."}
+        return JSONResponse(content={"error": "No hymn found with the given criteria."}, headers=headers)
     hymn = random.choice(filtered)
-    return hymn.brief()
+    return JSONResponse(content=hymn.brief(), headers=headers)
