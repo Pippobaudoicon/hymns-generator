@@ -116,26 +116,15 @@ def get_ward_history(
     """Get recent hymn selection history for a specific ward."""
     try:
         selections = history_service.get_ward_history(ward_name, limit)
-        
         # Convert to response format
         history = []
         for selection in selections:
-            hymns_data = [
-                {
-                    "position": hymn.position,
-                    "number": hymn.hymn_number,
-                    "title": hymn.hymn_title,
-                    "category": hymn.hymn_category
-                }
-                for hymn in sorted(selection.hymns, key=lambda h: h.position)
-            ]
-            
             history.append({
-                "date": selection.selection_date.strftime("%Y-%m-%d"),
-                "prima_domenica": selection.prima_domenica,
-                "domenica_festiva": selection.domenica_festiva,
-                "tipo_festivita": selection.tipo_festivita,
-                "hymns": hymns_data
+                "date": selection['selection_date'].strftime("%Y-%m-%d"),
+                "prima_domenica": selection['prima_domenica'],
+                "domenica_festiva": selection['domenica_festiva'],
+                "tipo_festivita": selection['tipo_festivita'],
+                "hymns": selection['hymns']
             })
         
         return {

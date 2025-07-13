@@ -198,7 +198,7 @@ class HymnHistoryService:
             logger.info(f"Saved hymn selection for ward '{ward_name}' with {len(hymns)} hymns")
             return selection
     
-    def get_ward_history(self, ward_name: str, limit: int = 10) -> List[HymnSelection]:
+    def get_ward_history(self, ward_name: str, limit: int = 10) -> List[dict]:
         """Get recent hymn selection history for a ward."""
         with db_manager.session_scope() as session:
             selections = (
@@ -210,11 +210,27 @@ class HymnHistoryService:
                 .all()
             )
             
-            # Load hymns for each selection
+            # Convert to dictionaries to avoid session issues
+            result = []
             for selection in selections:
-                selection.hymns  # This triggers loading of the relationship
+                hymns_data = []
+                for hymn in sorted(selection.hymns, key=lambda h: h.position):
+                    hymns_data.append({
+                        'position': hymn.position,
+                        'hymn_number': hymn.hymn_number,
+                        'hymn_title': hymn.hymn_title,
+                        'hymn_category': hymn.hymn_category
+                    })
+                
+                result.append({
+                    'selection_date': selection.selection_date,
+                    'prima_domenica': selection.prima_domenica,
+                    'domenica_festiva': selection.domenica_festiva,
+                    'tipo_festivita': selection.tipo_festivita,
+                    'hymns': hymns_data
+                })
             
-            return selections
+            return result
     
     def get_all_wards(self) -> List[str]:
         """Get list of all ward names."""
