@@ -36,7 +36,6 @@ class HymnSelection(Base):
     ward = relationship("Ward", back_populates="hymn_selections")
     hymns = relationship("SelectedHymn", back_populates="selection")
 
-
 class SelectedHymn(Base):
     """Represents an individual hymn in a selection."""
     __tablename__ = "selected_hymns"

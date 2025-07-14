@@ -399,12 +399,72 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/wards",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"wards"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["wards"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Ward",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ward_name\": \"Merate\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ward",
+							"host": ["{{base_url}}"],
+							"path": ["ward"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Ward Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ward/Merate",
+							"host": ["{{base_url}}"],
+							"path": ["ward", "Merate"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Ward Name",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"new_name\": \"Lecco\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/ward/Merate",
+							"host": ["{{base_url}}"],
+							"path": ["ward", "Merate"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Ward",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/ward/Lecco",
+							"host": ["{{base_url}}"],
+							"path": ["ward", "Lecco"]
 						}
 					},
 					"response": []
@@ -416,13 +476,8 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/ward_history/Muggio",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"ward_history",
-								"Muggio"
-							]
+							"host": ["{{base_url}}"],
+							"path": ["ward_history", "Muggio"]
 						}
 					},
 					"response": []
@@ -434,18 +489,10 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/ward_history/Merate?limit=5",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"ward_history",
-								"Merate"
-							],
+							"host": ["{{base_url}}"],
+							"path": ["ward_history", "Merate"],
 							"query": [
-								{
-									"key": "limit",
-									"value": "5"
-								}
+								{"key": "limit", "value": "5"}
 							]
 						}
 					},
@@ -458,18 +505,10 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/ward_history/Cimiano?limit=20",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"ward_history",
-								"Cimiano"
-							],
+							"host": ["{{base_url}}"],
+							"path": ["ward_history", "Cimiano"],
 							"query": [
-								{
-									"key": "limit",
-									"value": "20"
-								}
+								{"key": "limit", "value": "20"}
 							]
 						}
 					},
