@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selettore Inni - Chiesa di Gesù Cristo dei Santi degli Ultimi Giorni</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .form-section {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results-section {
+            padding: 30px;
+            background: #f9f9f9;
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .results-header h2 {
+            color: #667eea;
+            font-size: 1.8em;
+        }
+
+        .date-info {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .hymn-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .hymn-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .hymn-position {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 35px;
+            height: 35px;
+            line-height: 35px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: 700;
+            margin-right: 15px;
+        }
+
+        .hymn-number {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 1.2em;
+        }
+
+        .hymn-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .hymn-category {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            color: #666;
+            text-transform: capitalize;
+        }
+
+        .hymn-audio {
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .hymn-audio audio {
+            width: 100%;
+            height: 40px;
+            border-radius: 20px;
+        }
+
+        .hymn-meta {
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: #888;
+        }
+
+        .error-message {
+            background: #fee;
+            border-left: 4px solid #f00;
+            padding: 15px;
+            border-radius: 8px;
+            color: #c00;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .ward-info {
+            background: #e8eaf6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .ward-info strong {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Selettore Inni</h1>
+            <p>Chiesa di Gesù Cristo dei Santi degli Ultimi Giorni</p>
+        </div>
+
+        <div class="form-section">
+            <div class="form-group">
+                <label for="wardName">Nome del Rione</label>
+                <input type="text" id="wardName" placeholder="Es: Merate" value="Merate">
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="primaDomenica">
+                    <label for="primaDomenica">Prima Domenica del Mese (3 inni invece di 4)</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="domenicaFestiva">
+                    <label for="domenicaFestiva">Domenica Festiva</label>
+                </div>
+            </div>
+
+            <div class="form-group" id="festivitaGroup" style="display: none;">
+                <label for="tipoFestivita">Tipo di Festività</label>
+                <select id="tipoFestivita">
+                    <option value="">Seleziona...</option>
+                    <option value="pasqua">Pasqua</option>
+                    <option value="natale">Natale</option>
+                </select>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="getHymns()">🎼 Ottieni Inni</button>
+                <button class="btn-secondary" onclick="viewHistory()">📜 Cronologia</button>
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <!-- Results will be inserted here -->
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000/api/v1';
+
+        // Show/hide festivity type based on checkbox
+        document.getElementById('domenicaFestiva').addEventListener('change', function() {
+            document.getElementById('festivitaGroup').style.display = this.checked ? 'block' : 'none';
+        });
+
+        async function getHymns() {
+            const wardName = document.getElementById('wardName').value.trim();
+            const primaDomenica = document.getElementById('primaDomenica').checked;
+            const domenicaFestiva = document.getElementById('domenicaFestiva').checked;
+            const tipoFestivita = document.getElementById('tipoFestivita').value;
+
+            if (!wardName) {
+                alert('Per favore inserisci il nome del rione');
+                return;
+            }
+
+            if (domenicaFestiva && !tipoFestivita) {
+                alert('Per favore seleziona il tipo di festività');
+                return;
+            }
+
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.innerHTML = '<div class="loading">Caricamento inni</div>';
+            resultsSection.classList.add('show');
+
+            try {
+                let url = `${API_BASE_URL}/get_hymns_smart?ward_name=${encodeURIComponent(wardName)}&prima_domenica=${primaDomenica}&domenica_festiva=${domenicaFestiva}`;
+                
+                if (domenicaFestiva && tipoFestivita) {
+                    url += `&tipo_festivita=${tipoFestivita}`;
+                }
+
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Errore nel recupero degli inni');
+                }
+
+                const data = await response.json();
+                displayHymns(data.hymns, wardName, primaDomenica, domenicaFestiva, tipoFestivita);
+            } catch (error) {
+                resultsSection.innerHTML = `
+                    <div class="error-message">
+                        <strong>Errore:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function displayHymns(hymns, wardName, primaDomenica, domenicaFestiva, tipoFestivita) {
+            const today = new Date().toLocaleDateString('it-IT', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+
+            let html = `
+                <div class="results-header">
+                    <h2>Inni Selezionati</h2>
+                    <div class="date-info">${today}</div>
+                </div>
+                <div class="ward-info">
+                    <strong>Rione:</strong> ${wardName}
+                    ${primaDomenica ? ' • <strong>Prima Domenica</strong>' : ''}
+                    ${domenicaFestiva ? ` • <strong>Domenica Festiva (${tipoFestivita})</strong>` : ''}
+                </div>
+            `;
+
+            hymns.forEach((hymn, index) => {
+                // Support both API formats
+                const hymnNumber = hymn.number || hymn.songNumber;
+                const hymnCategory = hymn.category || hymn.bookSectionTitle;
+                
+                // Build metadata string
+                let metaInfo = [];
+                if (hymn.composers && hymn.composers.length > 0) {
+                    metaInfo.push(`Compositore: ${hymn.composers.join(', ')}`);
+                }
+                if (hymn.authors && hymn.authors.length > 0) {
+                    metaInfo.push(`Autore: ${hymn.authors.join(', ')}`);
+                }
+                
+                html += `
+                    <div class="hymn-card">
+                        <span class="hymn-position">${index + 1}</span>
+                        <span class="hymn-number">#${hymnNumber}</span>
+                        <div class="hymn-title">${hymn.title}</div>
+                        <span class="hymn-category">${hymnCategory}</span>
+                        ${metaInfo.length > 0 ? `<div class="hymn-meta">${metaInfo.join(' • ')}</div>` : ''}
+                        ${hymn.audio_url ? `
+                            <div class="hymn-audio">
+                                <audio controls preload="none">
+                                    <source src="${hymn.audio_url}" type="audio/mpeg">
+                                    Il tuo browser non supporta l'elemento audio.
+                                </audio>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            document.getElementById('resultsSection').innerHTML = html;
+        }
+
+        async function viewHistory() {
+            const wardName = document.getElementById('wardName').value.trim();
+
+            if (!wardName) {
+                alert('Per favore inserisci il nome del rione');
+                return;
+            }
+
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.innerHTML = '<div class="loading">Caricamento cronologia</div>';
+            resultsSection.classList.add('show');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/ward_history/${encodeURIComponent(wardName)}?limit=10`);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Errore nel recupero della cronologia');
+                }
+
+                const data = await response.json();
+                displayHistory(data);
+            } catch (error) {
+                resultsSection.innerHTML = `
+                    <div class="error-message">
+                        <strong>Errore:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function displayHistory(data) {
+            let html = `
+                <div class="results-header">
+                    <h2>Cronologia - ${data.ward_name}</h2>
+                    <div class="date-info">Ultime ${data.total_selections} selezioni</div>
+                </div>
+            `;
+
+            if (data.history.length === 0) {
+                html += '<p style="text-align: center; padding: 40px; color: #999;">Nessuna cronologia disponibile per questo rione.</p>';
+            } else {
+                data.history.forEach(selection => {
+                    const date = new Date(selection.date).toLocaleDateString('it-IT', { 
+                        weekday: 'short', 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+
+                    html += `
+                        <div style="margin-bottom: 30px;">
+                            <div class="ward-info">
+                                <strong>Data:</strong> ${date}
+                                ${selection.prima_domenica ? ' • <strong>Prima Domenica</strong>' : ''}
+                                ${selection.domenica_festiva ? ` • <strong>Festiva (${selection.tipo_festivita || 'N/A'})</strong>` : ''}
+                            </div>
+                    `;
+
+                    selection.hymns.forEach(hymn => {
+                        html += `
+                            <div class="hymn-card">
+                                <span class="hymn-position">${hymn.position}</span>
+                                <span class="hymn-number">#${hymn.hymn_number}</span>
+                                <div class="hymn-title">${hymn.hymn_title}</div>
+                                <span class="hymn-category">${hymn.hymn_category}</span>
+                            </div>
+                        `;
+                    });
+
+                    html += '</div>';
+                });
+            }
+
+            document.getElementById('resultsSection').innerHTML = html;
+        }
+    </script>
+</body>
+</html>

@@ -29,6 +29,9 @@ class Hymn(BaseModel):
     category: str = Field(alias="bookSectionTitle", description="Hymn category")
     tags: List[str] = Field(default_factory=list, description="Hymn tags")
     slug: Optional[str] = Field(None, description="URL slug")
+    audio_url: Optional[str] = Field(None, description="Audio accompaniment URL")
+    composers: List[str] = Field(default_factory=list, description="Composers")
+    authors: List[str] = Field(default_factory=list, description="Authors")
     
     model_config = ConfigDict(populate_by_name=True)
     

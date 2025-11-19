@@ -33,7 +33,28 @@ class HymnService:
             if not isinstance(data, list):
                 raise DataLoadError("Invalid data format: expected list")
             
-            self.hymns = [Hymn.model_validate(item) for item in data]
+            # Process each hymn to extract audio URL and metadata
+            processed_data = []
+            for item in data:
+                # Extract audio URL from assets
+                audio_url = None
+                if 'assets' in item and len(item['assets']) > 0:
+                    media_obj = item['assets'][0].get('mediaObject', {})
+                    if media_obj.get('assetType') == 'AUDIO_ACCOMPANIMENT' or media_obj.get('accompaniment'):
+                        audio_url = media_obj.get('distributionUrl')
+                
+                # Extract composers and authors
+                composers = [c.get('personName', '') for c in item.get('composers', [])]
+                authors = [a.get('personName', '') for a in item.get('authors', [])]
+                
+                # Add extracted data to the item
+                item['audio_url'] = audio_url
+                item['composers'] = composers
+                item['authors'] = authors
+                
+                processed_data.append(item)
+            
+            self.hymns = [Hymn.model_validate(item) for item in processed_data]
             
             if not self.hymns:
                 raise DataLoadError("No hymns found in data file")

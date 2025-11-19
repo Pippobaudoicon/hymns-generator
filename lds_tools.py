@@ -3,8 +3,9 @@
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from api.routes import router
 from hymns.exceptions import HymnAPIException
@@ -73,23 +74,14 @@ async def general_exception_handler(request: Request, exc: Exception):
 # Include API router
 app.include_router(router, prefix=settings.API_PREFIX if hasattr(settings, 'API_PREFIX') else "")
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # Root endpoint
 @app.get("/", tags=["Root"])
 def read_root():
-    """Root endpoint with API information."""
-    return {
-        "name": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "description": "RESTful API for Italian hymns with smart selection",
-        "docs_url": "/docs",
-        "health_url": f"{getattr(settings, 'API_PREFIX', '')}/health",
-        "features": [
-            "Smart hymn selection avoiding 5-week repetition",
-            "Ward-based hymn tracking",
-            "Traditional hymn selection",
-            "Historical hymn tracking"
-        ]
-    }
+    """Serve the hymn selector web interface."""
+    return FileResponse("static/index.html")
 
 if __name__ == "__main__":
     import uvicorn
