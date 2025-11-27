@@ -237,3 +237,155 @@ class HymnHistoryService:
         with db_manager.session_scope() as session:
             wards = session.query(Ward.name).all()
             return [ward.name for ward in wards]
+    
+    def get_replacement_hymn(
+        self,
+        position: int,
+        ward_name: str,
+        prima_domenica: bool = False,
+        domenica_festiva: bool = False,
+        tipo_festivita: Optional[FestivityType] = None,
+        exclude_numbers: Set[int] = None
+    ) -> Hymn:
+        """
+        Get a random replacement hymn for a specific position.
+        
+        Args:
+            position: Position of the hymn (1-4)
+            ward_name: Name of the ward
+            prima_domenica: First Sunday of month
+            domenica_festiva: Festive Sunday
+            tipo_festivita: Type of festivity
+            exclude_numbers: Set of hymn numbers to exclude (current selection)
+        
+        Returns:
+            A replacement hymn
+        """
+        import random
+        
+        if exclude_numbers is None:
+            exclude_numbers = set()
+        
+        with db_manager.session_scope() as session:
+            # Get recently used hymns
+            used_hymns = self.get_recent_hymn_numbers(ward_name, session)
+            
+            # Combine with explicitly excluded hymns
+            all_excluded = used_hymns | exclude_numbers
+            
+            # Position 2 is always Sacramento
+            if position == 2:
+                available_hymns = self.hymn_service._get_sacramento_hymns(domenica_festiva, tipo_festivita)
+            else:
+                available_hymns = self.hymn_service._get_other_hymns(domenica_festiva, tipo_festivita)
+            
+            # Filter out excluded hymns
+            available = [h for h in available_hymns if h.number not in all_excluded]
+            
+            # If no hymns available, expand the exclusion criteria
+            if not available:
+                available = [h for h in available_hymns if h.number not in exclude_numbers]
+            
+            if not available:
+                raise ValueError(f"No available hymns for position {position}")
+            
+            return random.choice(available)
+    
+    def get_available_hymns(
+        self,
+        position: int,
+        ward_name: str,
+        prima_domenica: bool = False,
+        domenica_festiva: bool = False,
+        tipo_festivita: Optional[FestivityType] = None,
+        exclude_numbers: Set[int] = None
+    ) -> List[Hymn]:
+        """
+        Get all available hymns for a specific position.
+        
+        Args:
+            position: Position of the hymn (1-4)
+            ward_name: Name of the ward
+            prima_domenica: First Sunday of month
+            domenica_festiva: Festive Sunday
+            tipo_festivita: Type of festivity
+            exclude_numbers: Set of hymn numbers to exclude (current selection)
+        
+        Returns:
+            List of available hymns sorted by number
+        """
+        if exclude_numbers is None:
+            exclude_numbers = set()
+        
+        with db_manager.session_scope() as session:
+            # Get recently used hymns
+            used_hymns = self.get_recent_hymn_numbers(ward_name, session)
+            
+            # Combine with explicitly excluded hymns
+            all_excluded = used_hymns | exclude_numbers
+            
+            # Position 2 is always Sacramento
+            if position == 2:
+                available_hymns = self.hymn_service._get_sacramento_hymns(domenica_festiva, tipo_festivita)
+            else:
+                available_hymns = self.hymn_service._get_other_hymns(domenica_festiva, tipo_festivita)
+            
+            # Filter out excluded hymns
+            available = [h for h in available_hymns if h.number not in all_excluded]
+            
+            # Sort by hymn number
+            available.sort(key=lambda h: h.number)
+            
+            return available
+
+    def update_hymn_in_selection(
+        self,
+        ward_name: str,
+        position: int,
+        new_hymn: Hymn
+    ) -> bool:
+        """
+        Update a hymn in the most recent selection for a ward.
+        
+        Args:
+            ward_name: Name of the ward
+            position: Position of the hymn to update (1-4)
+            new_hymn: The new hymn to set
+        
+        Returns:
+            True if update was successful, False if no selection found
+        """
+        with db_manager.session_scope() as session:
+            # Get the most recent selection for this ward
+            most_recent = (
+                session.query(HymnSelection)
+                .join(Ward)
+                .filter(Ward.name == ward_name)
+                .order_by(desc(HymnSelection.selection_date))
+                .first()
+            )
+            
+            if not most_recent:
+                logger.warning(f"No selection found for ward '{ward_name}' to update")
+                return False
+            
+            # Find the hymn at the specified position
+            hymn_to_update = None
+            for selected_hymn in most_recent.hymns:
+                if selected_hymn.position == position:
+                    hymn_to_update = selected_hymn
+                    break
+            
+            if not hymn_to_update:
+                logger.warning(f"No hymn found at position {position} in selection")
+                return False
+            
+            # Update the hymn
+            old_number = hymn_to_update.hymn_number
+            hymn_to_update.hymn_number = new_hymn.number
+            hymn_to_update.hymn_title = new_hymn.title
+            hymn_to_update.hymn_category = new_hymn.category
+            
+            session.commit()
+            logger.info(f"Updated hymn at position {position} for ward '{ward_name}': #{old_number} -> #{new_hymn.number}")
+            return True

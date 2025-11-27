@@ -267,6 +267,13 @@ class HymnService:
             logger.error(f"Error filtering hymns: {e}")
             raise DataNotFoundError("Failed to retrieve hymn")
 
+    def get_hymn_by_number(self, number: int) -> Optional[Hymn]:
+        """Get a specific hymn by its number."""
+        for hymn in self.hymns:
+            if hymn.number == number:
+                return hymn
+        return None
+
     def get_categories(self) -> List[str]:
         """Get all available hymn categories."""
         categories = {hymn.category for hymn in self.hymns}
