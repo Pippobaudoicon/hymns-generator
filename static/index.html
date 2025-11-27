@@ -412,8 +412,8 @@
 
         <div class="form-section">
             <div class="form-group">
-                <label for="wardName">Nome del Rione</label>
-                <input type="text" id="wardName" placeholder="Es: Merate" value="Merate">
+                <label for="wardName">Nome del Rione <small style="color: #999; font-weight: normal;">(opzionale - lascia vuoto per selezione casuale)</small></label>
+                <input type="text" id="wardName" placeholder="Es: Merate" value="">
             </div>
 
             <div class="form-group">
@@ -480,11 +480,6 @@
             const domenicaFestiva = document.getElementById('domenicaFestiva').checked;
             const tipoFestivita = document.getElementById('tipoFestivita').value;
 
-            if (!wardName) {
-                alert('Per favore inserisci il nome del rione');
-                return;
-            }
-
             if (domenicaFestiva && !tipoFestivita) {
                 alert('Per favore seleziona il tipo di festività');
                 return;
@@ -495,7 +490,15 @@
             resultsSection.classList.add('show');
 
             try {
-                let url = `${API_BASE_URL}/get_hymns_smart?ward_name=${encodeURIComponent(wardName)}&prima_domenica=${primaDomenica}&domenica_festiva=${domenicaFestiva}`;
+                let url;
+                
+                if (wardName) {
+                    // Smart selection with ward history
+                    url = `${API_BASE_URL}/get_hymns_smart?ward_name=${encodeURIComponent(wardName)}&prima_domenica=${primaDomenica}&domenica_festiva=${domenicaFestiva}`;
+                } else {
+                    // Simple random selection without history
+                    url = `${API_BASE_URL}/get_hymns?prima_domenica=${primaDomenica}&domenica_festiva=${domenicaFestiva}`;
+                }
                 
                 if (domenicaFestiva && tipoFestivita) {
                     url += `&tipo_festivita=${tipoFestivita}`;
@@ -543,7 +546,7 @@
                     <div class="date-info">${today}</div>
                 </div>
                 <div class="ward-info">
-                    <strong>Rione:</strong> ${wardName}
+                    ${wardName ? `<strong>Rione:</strong> ${wardName}` : '<em>Selezione casuale (senza rione)</em>'}
                     ${primaDomenica ? ' • <strong>Prima Domenica</strong>' : ''}
                     ${domenicaFestiva ? ` • <strong>Domenica Festiva (${tipoFestivita})</strong>` : ''}
                 </div>
@@ -563,6 +566,9 @@
                     metaInfo.push(`Autore: ${hymn.authors.join(', ')}`);
                 }
                 
+                // Only show swap buttons if ward is specified (smart selection)
+                const showSwapButtons = !!wardName;
+                
                 html += `
                     <div class="hymn-card" id="hymn-card-${index + 1}">
                         <span class="hymn-position">${index + 1}</span>
@@ -578,10 +584,12 @@
                                 </audio>
                             </div>
                         ` : ''}
-                        <div class="hymn-actions">
-                            <button class="btn-swap random" onclick="swapRandom(${index + 1}, '${hymnCategory}')">Altro casuale</button>
-                            <button class="btn-swap choose" onclick="openHymnSelector(${index + 1}, '${hymnCategory}')">Scegli inno</button>
-                        </div>
+                        ${showSwapButtons ? `
+                            <div class="hymn-actions">
+                                <button class="btn-swap random" onclick="swapRandom(${index + 1}, '${hymnCategory}')">Altro casuale</button>
+                                <button class="btn-swap choose" onclick="openHymnSelector(${index + 1}, '${hymnCategory}')">Scegli inno</button>
+                            </div>
+                        ` : ''}
                     </div>
                 `;
             });
