@@ -1,0 +1,734 @@
+/* Italian Hymns API - Styles */
+
+:root {
+    --primary-color: #1B2A49; /* deep midnight blue */
+    --secondary-color: #415A77; /* slate spiritual blue */
+    --gradient: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+
+    /* Gold accents */
+    --accent-gold: #D9C58A; /* soft temple gold */
+    --accent-gold-hover: #C7B375; /* slightly darker gold for hover */
+
+    /* UI tones */
+    --primary-hover: #304766;
+    --primary-light: #E8E4D9; /* light neutral with gold warmth */
+    --primary-shadow: rgba(27, 42, 73, 0.45);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--gradient);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.header {
+    background: var(--gradient);
+    color: white;
+    padding: 30px;
+    text-align: center;
+}
+
+.header h1 {
+    font-size: 2em;
+    margin-bottom: 10px;
+}
+
+.header p {
+    opacity: 0.9;
+    font-size: 1.1em;
+}
+
+.form-section {
+    padding: 30px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+input[type="text"],
+select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: border-color 0.3s;
+}
+
+input[type="text"]:focus,
+select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.checkbox-group label {
+    margin: 0;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.button-group {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+button {
+    flex: 1;
+    padding: 15px 30px;
+    font-size: 1.1em;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: var(--gradient);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px var(--primary-shadow);
+}
+
+.btn-secondary {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.btn-secondary:hover {
+    background: #e0e0e0;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.results-section {
+    padding: 30px;
+    background: #f9f9f9;
+    display: none;
+}
+
+.results-section.show {
+    display: block;
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.results-header h2 {
+    color: var(--primary-color);
+    font-size: 1.8em;
+}
+
+.date-info {
+    font-size: 0.9em;
+    color: #666;
+}
+
+.hymn-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.hymn-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.hymn-position {
+    display: inline-block;
+    background: var(--gradient);
+    color: white;
+    width: 35px;
+    height: 35px;
+    line-height: 35px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: 700;
+    margin-right: 15px;
+}
+
+.hymn-number {
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 1.2em;
+}
+
+.hymn-title {
+    font-size: 1.3em;
+    font-weight: 600;
+    color: #333;
+    margin: 10px 0;
+}
+
+.hymn-category {
+    display: inline-block;
+    background: #f0f0f0;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 0.9em;
+    color: #666;
+    text-transform: capitalize;
+}
+
+.hymn-audio {
+    margin-top: 15px;
+    width: 100%;
+}
+
+.hymn-audio audio {
+    width: 100%;
+    height: 40px;
+    border-radius: 20px;
+}
+
+.hymn-meta {
+    margin-top: 10px;
+    font-size: 0.85em;
+    color: #888;
+}
+
+.hymn-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.btn-swap {
+    padding: 8px 16px;
+    font-size: 0.9em;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex: none;
+}
+
+.btn-swap.random {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-swap.random:hover {
+    background: var(--primary-hover);
+}
+
+.btn-swap.choose {
+    background: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.btn-swap.choose:hover {
+    background: #d1d5f0;
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    background: var(--gradient);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.modal-search {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-search input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1em;
+}
+
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.hymn-list-item {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.hymn-list-item:hover {
+    background: #f5f5f5;
+}
+
+.hymn-list-item .hymn-number {
+    color: var(--primary-color);
+    font-weight: 700;
+    margin-right: 10px;
+}
+
+.hymn-list-item .hymn-title {
+    font-weight: 600;
+    margin: 0;
+}
+
+.hymn-list-item .hymn-category {
+    font-size: 0.85em;
+    color: #888;
+}
+
+.error-message {
+    background: #fee;
+    border-left: 4px solid #f00;
+    padding: 15px;
+    border-radius: 8px;
+    color: #c00;
+    margin-bottom: 20px;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    font-size: 1.2em;
+    color: var(--primary-color);
+}
+
+.loading::after {
+    content: '...';
+    animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60%, 100% { content: '...'; }
+}
+
+.ward-info {
+    background: #e8eaf6;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.ward-info strong {
+    color: var(--primary-color);
+}
+
+/* History Panel Styles */
+.history-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.history-overlay.show {
+    display: block;
+    opacity: 1;
+}
+
+.history-panel {
+    position: fixed;
+    top: 0;
+    right: -450px;
+    width: 100%;
+    max-width: 450px;
+    height: 100%;
+    background: white;
+    box-shadow: -5px 0 30px rgba(0, 0, 0, 0.3);
+    z-index: 2001;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.history-panel.show {
+    right: 0;
+}
+
+.history-panel-header {
+    background: var(--gradient);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.history-panel-header h2 {
+    margin: 0;
+    font-size: 1.4em;
+}
+
+.history-panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.history-tabs {
+    display: flex;
+    border-bottom: 2px solid #e0e0e0;
+    background: #f9f9f9;
+    flex-shrink: 0;
+}
+
+.history-tab {
+    flex: 1;
+    padding: 15px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: 600;
+    color: #666;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.history-tab:hover {
+    background: #f0f0f0;
+}
+
+.history-tab.active {
+    color: var(--primary-color);
+    background: white;
+}
+
+.history-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--primary-color);
+}
+
+.ward-list {
+    padding: 10px 0;
+}
+
+.ward-list-item {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.ward-list-item:hover {
+    background: #f5f5f5;
+}
+
+.ward-list-item .ward-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    color: white;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.ward-list-item .ward-name {
+    flex: 1;
+    font-weight: 600;
+    color: #333;
+}
+
+.ward-list-item .ward-arrow {
+    color: #ccc;
+    font-size: 1.2em;
+}
+
+.history-back-btn {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    background: #f9f9f9;
+    border: none;
+    border-bottom: 2px solid #e0e0e0;
+    cursor: pointer;
+    width: 100%;
+    font-size: 1em;
+    color: var(--primary-color);
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.history-back-btn:hover {
+    background: #f0f0f0;
+}
+
+.history-back-btn svg {
+    margin-right: 10px;
+}
+
+.history-ward-title {
+    padding: 20px;
+    background: #f9f9f9;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.history-ward-title h3 {
+    margin: 0 0 5px 0;
+    color: #333;
+}
+
+.history-ward-title span {
+    font-size: 0.9em;
+    color: #888;
+}
+
+.history-selection-group {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.history-selection-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    background: #f9f9f9;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.history-selection-header:hover {
+    background: #f0f0f0;
+}
+
+.history-selection-date {
+    font-weight: 600;
+    color: #333;
+}
+
+.history-selection-badges {
+    display: flex;
+    gap: 8px;
+}
+
+.history-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: 600;
+}
+
+.history-badge.prima {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.history-badge.festiva {
+    background: #fce4ec;
+    color: #c2185b;
+}
+
+.history-selection-hymns {
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.history-selection-hymns.expanded {
+    max-height: 400px;
+    padding: 10px 20px 20px;
+}
+
+.history-hymn-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.history-hymn-item:last-child {
+    border-bottom: none;
+}
+
+.history-hymn-position {
+    width: 28px;
+    height: 28px;
+    background: var(--gradient);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85em;
+    font-weight: 700;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.history-hymn-info {
+    flex: 1;
+}
+
+.history-hymn-number {
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 0.9em;
+}
+
+.history-hymn-title {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.95em;
+    margin-top: 2px;
+}
+
+.history-hymn-category {
+    font-size: 0.8em;
+    color: #888;
+    margin-top: 2px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 30px;
+    color: #888;
+}
+
+.empty-state svg {
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    margin: 0 0 10px 0;
+    color: #666;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 0.95em;
+}
+
+.toggle-arrow {
+    transition: transform 0.3s ease;
+    color: #999;
+}
+
+.toggle-arrow.expanded {
+    transform: rotate(180deg);
+}
+
+@media (max-width: 500px) {
+    .history-panel {
+        max-width: 100%;
+    }
+}

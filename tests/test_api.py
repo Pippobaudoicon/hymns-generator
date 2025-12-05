@@ -3,8 +3,9 @@
 import pytest
 import requests
 from fastapi.testclient import TestClient
+
+from app import app
 from hymns.service import HymnService
-from lds_tools import app
 
 # Create test client
 client = TestClient(app)
@@ -14,12 +15,12 @@ class TestAPI:
     """Test class for API endpoints."""
 
     def test_root_endpoint(self):
-        """Test the root endpoint."""
+        """Test the root endpoint returns HTML."""
         response = client.get("/")
         assert response.status_code == 200
-        data = response.json()
-        assert "name" in data
-        assert data["name"] == "Italian Hymns API"
+        assert response.headers["content-type"].startswith("text/html")
+        # Check that the HTML contains expected content
+        assert b"Selettore Inni" in response.content
 
     def test_health_endpoint(self):
         """Test the health check endpoint."""

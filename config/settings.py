@@ -1,8 +1,13 @@
 """Configuration settings for the Italian Hymns API."""
 
-from pathlib import Path
 import os
+from pathlib import Path
 from typing import Optional
+
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 class Settings:
     """Application settings."""
@@ -24,8 +29,7 @@ class Settings:
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{PROJECT_ROOT / 'data' / 'hymns_history.db'}")
     
     # API settings
-    API_PREFIX: str = "/api/v1"
-    
+    API_PREFIX: str = os.getenv("API_PREFIX", "/api/v1")
     @classmethod
     def get_data_path(cls) -> str:
         """Get the path to the hymns data file."""

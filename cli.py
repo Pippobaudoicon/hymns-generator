@@ -84,7 +84,7 @@ def serve_command(args):
     print(f"Starting Italian Hymns API on {args.host}:{args.port}")
     
     uvicorn.run(
-        "lds_tools:app",
+        "app:app",
         host=args.host,
         port=args.port,
         reload=args.reload,

@@ -1,231 +1,352 @@
-# Italian Hymns RESTful API
+# Italian Hymns API
 
-This project provides a RESTful API for generating and retrieving Italian hymns for the Church of Jesus Christ, with special logic for different occasions (e.g., sacrament, festive Sundays, etc.).
+[![CI/CD Pipeline](https://github.com/yourusername/italian-hymns-api/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/yourusername/italian-hymns-api/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-## Features
+A professional-grade RESTful API for managing and retrieving Italian hymns for the Church of Jesus Christ, featuring smart selection algorithms to avoid repetition and support for special occasions.
 
-- **Hymn Selection**: Generate lists of hymns for church services with customizable rules
-- **Single Hymn Retrieval**: Get specific hymns by number, category, or tag
-- **Fresh Results**: Always returns randomized results (no caching)
-- **Error Handling**: Comprehensive error handling and validation
-- **Well-Organized**: Clean, SOLID-compliant code structure
-- **Command Line Interface**: CLI for data management and server operations
-- **Extensible**: Easy to extend with new features and categories
+## ✨ Features
 
-## API Endpoints
+- **Smart Hymn Selection**: Intelligent algorithms to avoid recently used hymns
+- **Ward Management**: Track hymn usage per ward to ensure variety
+- **Special Occasions**: Support for Christmas, Easter, and other festivities
+- **RESTful API**: Clean, well-documented endpoints
+- **Database Tracking**: SQLAlchemy-based history tracking
+- **CLI Tools**: Comprehensive command-line interface
+- **Comprehensive Testing**: Full test coverage with pytest
+- **CI/CD Ready**: GitHub Actions workflow included
 
-### `GET /api/v1/get_hymns`
-Returns a list of hymns according to the rules:
-- 3 hymns for the first Sunday (fast & testimony), 4 otherwise
-- The second hymn is always from the "Sacramento" category
-- Excludes "Occasioni speciali" and festive hymns unless requested
+## 🚀 Quick Start
+
+### Using Make (Recommended)
+
+```bash
+# Install dependencies
+make install
+
+# Initialize database
+make db-init
+
+# Run development server
+make run
+```
+
+### Manual Setup
+
+```bash
+# Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Initialize database
+python cli.py db init
+
+# Run server
+python cli.py serve --reload
+```
+
+### Using PM2 (Recommended for Production)
+
+```bash
+# Quick deployment
+./scripts/pm2-deploy.sh
+
+# Or manually
+make pm2-start
+
+# View logs
+make pm2-logs
+
+# Restart
+make pm2-restart
+
+# Stop
+make pm2-stop
+```
+
+## 📚 API Documentation
+
+Once the server is running, visit:
+- **Interactive API docs**: http://localhost:8000/docs
+- **Alternative docs**: http://localhost:8000/redoc
+- **Web Interface**: http://localhost:8000/
+
+### Main Endpoints
+
+#### Get Hymns for Service
+```http
+GET /api/v1/get_hymns?prima_domenica=false&domenica_festiva=false
+```
+
+Returns a list of hymns for a church service with smart selection to avoid repetition.
 
 **Query Parameters:**
-- `prima_domenica` (bool): If true, returns 3 hymns (first Sunday). Default: false
-- `domenica_festiva` (bool): If true, includes festive hymns. Requires `tipo_festivita`
-- `tipo_festivita` (string): Required if `domenica_festiva` is true. Either `natale` or `pasqua`
+- `prima_domenica` (bool): First Sunday (fast & testimony) - returns 3 hymns instead of 4
+- `domenica_festiva` (bool): Festive Sunday (requires `tipo_festivita`)
+- `tipo_festivita` (string): Type of festivity (`natale` or `pasqua`)
+- `ward_name` (string): Ward name for history tracking
 
-**Examples:**
-- `/api/v1/get_hymns`
-- `/api/v1/get_hymns?prima_domenica=true`
-- `/api/v1/get_hymns?domenica_festiva=true&tipo_festivita=natale`
+#### Get Single Hymn
+```http
+GET /api/v1/get_hymn?category=sacramento&tag=natale
+```
 
-### `GET /api/v1/get_hymn`
-Returns a single hymn filtered by number, category, or tag (all optional, AND logic).
-If multiple hymns match, one is returned at random.
+Returns a single hymn filtered by number, category, or tag.
 
-**Query Parameters:**
-- `number` (int): Hymn number
-- `category` (string): Hymn category (e.g., "Sacramento")
-- `tag` (string): Hymn tag (e.g., "natale", "pasqua")
+#### Additional Endpoints
+- `GET /api/v1/categories` - List all categories
+- `GET /api/v1/tags` - List all tags
+- `GET /api/v1/stats` - Collection statistics
+- `GET /api/v1/health` - Health check
+- `GET /api/v1/wards` - List all wards
+- `GET /api/v1/wards/{ward_name}/history` - Ward selection history
 
-**Examples:**
-- `/api/v1/get_hymn?category=sacramento`
-- `/api/v1/get_hymn?tag=natale`
-- `/api/v1/get_hymn?number=1`
-- `/api/v1/get_hymn?category=sacramento&tag=natale`
-
-### Additional Endpoints
-- `GET /api/v1/categories` - Get all available categories
-- `GET /api/v1/tags` - Get all available tags
-- `GET /api/v1/stats` - Get collection statistics
-- `GET /api/v1/health` - Health check endpoint
-
-## Project Structure
+## 🏗️ Project Structure
 
 ```
-hymns/
-├── api/                    # API layer
-│   ├── __init__.py
-│   └── routes.py          # FastAPI route definitions
-├── hymns/                 # Core domain logic
-│   ├── __init__.py
-│   ├── models.py          # Pydantic data models
-│   ├── service.py         # Business logic
+italian-hymns-api/
+├── api/                    # API layer (FastAPI routes)
+│   ├── routes/
+│   │   ├── health.py      # Health check endpoints
+│   │   ├── hymns.py       # Hymn-related endpoints
+│   │   └── wards.py       # Ward management endpoints
+│   └── routes.py          # Route aggregation
+├── hymns/                 # Domain layer (business logic)
+│   ├── models.py          # Pydantic models
+│   ├── service.py         # Hymn service
 │   └── exceptions.py      # Custom exceptions
+├── database/              # Data layer
+│   ├── models.py          # SQLAlchemy models
+│   ├── database.py        # Database configuration
+│   └── history_service.py # History tracking service
 ├── config/                # Configuration
-│   ├── __init__.py
 │   └── settings.py        # Application settings
 ├── utils/                 # Utilities
-│   ├── __init__.py
 │   └── scraper.py         # Data scraping utilities
+├── tests/                 # Test suite
+│   ├── conftest.py        # Pytest configuration
+│   ├── test_api.py        # API tests
+│   └── test_*.py          # Additional tests
+├── scripts/               # Utility scripts
+│   ├── deploy.sh          # Deployment script
+│   └── backup.sh          # Backup script
+├── docs/                  # Documentation
+│   └── index.md           # Documentation home
 ├── data/                  # Data files
 │   ├── italian_hymns_full.json
 │   └── italian_hymns.csv
-├── lds_tools.py          # Main FastAPI application
-├── cli.py                # Command line interface
-├── requirements.txt      # Python dependencies
-└── README.md            # This file
+├── static/                # Static files
+│   └── index.html         # Web interface
+├── .github/               # GitHub configuration
+│   └── workflows/
+│       └── ci.yml         # CI/CD pipeline
+├── app.py                 # Main FastAPI application
+├── cli.py                 # Command-line interface
+├── Makefile               # Task automation
+├── requirements.txt       # Production dependencies
+├── requirements-dev.txt   # Development dependencies
+├── pyproject.toml         # Project configuration
+├── .env.example           # Environment variables template
+├── .editorconfig          # Editor configuration
+├── .pre-commit-config.yaml # Pre-commit hooks
+└── README.md              # This file
 ```
 
-## Installation and Setup
+## 🛠️ Development
 
-1. **Clone the repository and navigate to the project directory**
+### Available Make Commands
 
-2. **Create and activate a Python virtual environment:**
+```bash
+make help           # Show all available commands
+make install        # Install production dependencies
+make dev-install    # Install development dependencies
+make test           # Run tests
+make test-cov       # Run tests with coverage
+make lint           # Run linters
+make format         # Format code
+make clean          # Clean up generated files
+make run            # Run development server
+make run-prod       # Run production server
+
+# PM2 Commands
+make pm2-start      # Start app with PM2
+make pm2-stop       # Stop PM2 app
+make pm2-restart    # Restart PM2 app
+make pm2-reload     # Zero-downtime reload
+make pm2-logs       # Show PM2 logs
+make pm2-status     # Show PM2 status
+make pm2-monit      # Monitor PM2 app
+
+# Database Commands
+make db-init        # Initialize database
+make db-reset       # Reset database
+make db-stats       # Show database statistics
+
+# Data Commands
+make scrape         # Scrape fresh hymn data
+make stats          # Show hymn statistics
+```
+
+### CLI Commands
+
+```bash
+# Server management
+python cli.py serve --reload --host 0.0.0.0 --port 8000
+
+# Database management
+python cli.py db init          # Initialize database
+python cli.py db reset         # Reset database
+python cli.py db stats         # Show database statistics
+
+# Data management
+python cli.py scrape           # Scrape fresh hymn data
+python cli.py stats --verbose  # Show hymn statistics
+python cli.py demo             # Create demo data
+
+# Testing
+python cli.py test             # Run tests
+python cli.py test --coverage  # Run with coverage
+```
+
+### Code Quality
+
+The project uses several tools to maintain code quality:
+
+- **Black**: Code formatting
+- **isort**: Import sorting
+- **flake8**: Linting
+- **mypy**: Type checking
+- **pytest**: Testing
+
+Run all checks:
+```bash
+make lint format test
+```
+
+### Pre-commit Hooks
+
+Install pre-commit hooks to automatically check code before committing:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+## 🚢 Deployment
+
+### PM2 Deployment (Recommended)
+
+1. **Using the PM2 deployment script:**
    ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ./scripts/pm2-deploy.sh
    ```
 
-3. **Install dependencies:**
+2. **Manual PM2 deployment:**
    ```bash
+   # Install dependencies
    pip install -r requirements.txt
+   
+   # Initialize database
+   python cli.py db init
+   
+   # Start with PM2
+   pm2 start ecosystem.config.js
+   pm2 save
+   pm2 startup
    ```
 
-## Usage
+3. **PM2 Management:**
+   ```bash
+   pm2 status                    # Check status
+   pm2 logs italian-hymns-api    # View logs
+   pm2 restart italian-hymns-api # Restart
+   pm2 reload italian-hymns-api  # Zero-downtime reload
+   pm2 monit                     # Monitor resources
+   ```
 
-### Command Line Interface
+### Systemd Deployment (Alternative)
 
-The project includes a CLI for various operations:
+1. **Using the systemd deployment script:**
+   ```bash
+   sudo ./scripts/deploy.sh
+   ```
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and configure:
 
 ```bash
-# Show available commands
-python cli.py --help
-
-# Scrape fresh hymn data from the web
-python cli.py scrape
-
-# Show hymn collection statistics
-python cli.py stats
-
-# Show detailed statistics
-python cli.py stats --verbose
-
-# Start the development server
-python cli.py serve --reload
-
-# Start server on custom host/port
-python cli.py serve --host 0.0.0.0 --port 8080
+cp .env.example .env
+# Edit .env with your configuration
 ```
 
-### Development Server
-
-Start the development server with auto-reload:
-```bash
-python cli.py serve --reload
-```
-
-Or using uvicorn directly:
-```bash
-uvicorn lds_tools:app --reload --host 0.0.0.0 --port 8000
-```
-
-### Production Deployment
-
-For production, use Gunicorn:
-```bash
-gunicorn -k uvicorn.workers.UvicornWorker lds_tools:app --bind 0.0.0.0:8000
-```
-
-For production using PM2:
-```bash
-pm2 start .venv/bin/gunicorn \
-  --name lds_tools \
-  --interpreter none \
-  -- \
-  -k uvicorn.workers.UvicornWorker lds_tools:app --bind 0.0.0.0:8000
-```
-
-## Configuration
-
-The application can be configured using environment variables:
-
+Key variables:
 - `DEBUG`: Enable debug mode (default: false)
 - `HOST`: Server host (default: 0.0.0.0)
 - `PORT`: Server port (default: 8000)
-- `DATA_PATH`: Path to hymns data file (default: data/italian_hymns_full.json)
+- `DATABASE_URL`: Database connection string
+- `DATA_PATH`: Path to hymns data file
 
-## Data Management
-
-### Updating Hymn Data
-
-To fetch fresh hymn data from the Church website:
-```bash
-python cli.py scrape
-```
-
-This will update both `data/italian_hymns_full.json` and `data/italian_hymns.csv`.
-
-### Data Format
-
-The hymn data includes:
-- **number**: Hymn number
-- **title**: Hymn title
-- **category**: Hymn category (e.g., "Sacramento", "Restaurazione")
-- **tags**: List of tags (e.g., ["natale"], ["pasqua"])
-
-## API Documentation
-
-When the server is running, visit:
-- **Interactive docs**: http://localhost:8000/docs
-- **Alternative docs**: http://localhost:8000/redoc
-
-## Development
-
-### Code Organization
-
-The codebase follows SOLID principles and is organized into clear layers:
-
-- **API Layer** (`api/`): FastAPI routes and HTTP handling
-- **Domain Layer** (`hymns/`): Core business logic and models
-- **Configuration** (`config/`): Application settings
-- **Utilities** (`utils/`): Helper functions and tools
-
-### Error Handling
-
-The API includes comprehensive error handling:
-- Custom exceptions for different error types
-- Proper HTTP status codes
-- Detailed error messages for debugging
-
-### Testing
+## 📊 Testing
 
 ```bash
-# Install test dependencies
-pip install pytest httpx
+# Run all tests
+make test
 
-# Run tests (when test files are created)
-pytest
+# Run with coverage
+make test-cov
+
+# Run specific test file
+pytest tests/test_api.py -v
+
+# Run tests matching pattern
+pytest -k "test_hymn" -v
 ```
 
-## Deployment Notes
+## 📖 Documentation
 
-- Use a process manager (e.g., PM2, systemd) to keep the app running
-- Use Nginx as a reverse proxy for HTTPS and performance
-- Configure CORS settings for production
-- Set up proper logging and monitoring
+Full documentation is available in the `docs/` directory. Build and serve locally:
 
-## Contributing
+```bash
+pip install mkdocs mkdocs-material
+mkdocs serve
+```
 
-1. Follow the existing code structure and patterns
-2. Add proper error handling and logging
-3. Update documentation for new features
-4. Test your changes thoroughly
+Visit http://localhost:8001 to view the documentation.
 
-## Notes
+## 🤝 Contributing
 
-- All endpoints return fresh, randomized results (no cache)
-- The code follows OOP and SOLID principles for easy extension
-- Logging is configured for both development and production
-- The CLI provides easy access to common operations
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run tests and linters (`make lint test`)
+5. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Church of Jesus Christ for the hymn data
+- FastAPI for the excellent web framework
+- All contributors who have helped improve this project
+
+## 📧 Contact
+
+For questions or support, please open an issue on GitHub.
+
+---
+
+Made with ❤️ for the Italian-speaking members of the Church of Jesus Christ

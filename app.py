@@ -1,4 +1,9 @@
-"""Main FastAPI application for Italian Hymns API."""
+"""
+Main FastAPI application for Italian Hymns API.
+
+This module initializes and configures the FastAPI application,
+including middleware, exception handlers, and route registration.
+"""
 
 import logging
 from contextlib import asynccontextmanager
@@ -72,7 +77,7 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 # Include API router
-app.include_router(router, prefix=settings.API_PREFIX if hasattr(settings, 'API_PREFIX') else "")
+app.include_router(router, prefix=settings.API_PREFIX)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -86,7 +91,7 @@ def read_root():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        "lds_tools:app",
+        "app:app",
         host=settings.HOST,
         port=settings.PORT,
         reload=settings.is_debug()
