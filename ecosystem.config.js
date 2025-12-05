@@ -1,9 +1,9 @@
 module.exports = {
   apps: [{
     name: 'italian-hymns-api',
-    script: '.venv/bin/gunicorn',
+    script: 'gunicorn',
     args: '-k uvicorn.workers.UvicornWorker app:app --bind 0.0.0.0:8000 --workers 4 --worker-class uvicorn.workers.UvicornWorker --timeout 120',
-    cwd: '/Users/lopiparo/Documents/Work/hymns',
+    cwd: '/var/www/lds/hymns-generator',
     interpreter: 'none',
     instances: 1,
     autorestart: true,
