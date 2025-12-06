@@ -90,5 +90,5 @@ We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 
 ---
 
-[Unreleased]: https://github.com/yourusername/italian-hymns-api/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/yourusername/italian-hymns-api/releases/tag/v1.0.0
+[Unreleased]: https://github.com/Pippobaudoicon/hymns-generator/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Pippobaudoicon/hymns-generator/releases/tag/v1.0.0

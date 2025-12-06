@@ -106,19 +106,6 @@ pm2-status:
 pm2-monit:
 	pm2 monit
 
-# Docker (optional)
-docker-build:
-	docker build -t italian-hymns-api:latest .
-
-docker-up:
-	docker-compose up -d
-
-docker-down:
-	docker-compose down
-
-docker-logs:
-	docker-compose logs -f
-
 # Database
 db-init:
 	python cli.py db init

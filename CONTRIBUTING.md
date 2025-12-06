@@ -18,8 +18,8 @@ Please be respectful and constructive in all interactions. We aim to maintain a 
 
 1. **Fork and clone the repository**
    ```bash
-   git clone https://github.com/yourusername/italian-hymns-api.git
-   cd italian-hymns-api
+   git clone https://github.com/Pippobaudoicon/hymns-generator
+   cd hymns-generator
    ```
 
 2. **Create a virtual environment**

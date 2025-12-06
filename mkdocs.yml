@@ -1,10 +1,10 @@
 site_name: Italian Hymns API
-site_description: RESTful API for Italian hymns management
-site_author: Italian Hymns Team
-site_url: https://italian-hymns-api.example.com
+site_description: RESTful API for Italian hymns management and Web interface
+site_author: Tommaso Lo Piparo
+site_url: https://lds.tommasolopiparo.com
 
-repo_name: italian-hymns-api
-repo_url: https://github.com/yourusername/italian-hymns-api
+repo_name: hymns-generator
+repo_url: https://github.com/Pippobaudoicon/hymns-generator
 
 theme:
   name: material
