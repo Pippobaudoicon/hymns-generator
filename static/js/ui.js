@@ -52,8 +52,8 @@ export const ui = {
             <div class="results-header">
                 <h2>${isHistorical ? 'Inni dalla Cronologia' : 'Inni Selezionati'}</h2>
                 <div class="date-info">${displayDate}</div>
-                ${isHistorical && !canEdit ? '<div class="historical-notice">⚠️ Selezione passata - Solo visualizzazione</div>' : ''}
-                ${isHistorical && canEdit ? '<div class="historical-notice editable">✏️ Puoi modificare questa selezione</div>' : ''}
+                ${isHistorical && !canEdit ? '<div class="historical-notice">Solo visualizzazione</div>' : ''}
+                ${isHistorical && canEdit ? '<div class="historical-notice editable">Modificabile</div>' : ''}
             </div>
             <div class="ward-info">
                 ${wardName ? `<strong>Rione:</strong> ${wardName}` : '<em>Selezione casuale (senza rione)</em>'}
@@ -225,6 +225,12 @@ export const ui = {
                                         <path d="M3 12h18M12 3v18"/>
                                     </svg>
                                 </button>
+                                <button class="btn-delete-history" data-selection-date="${selection.date}" data-ward-name="${data.ward_name}" title="Elimina questa selezione">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"/>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                    </svg>
+                                </button>
                                 <svg class="toggle-arrow" id="arrow-${index}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="6,9 12,15 18,9"/>
                                 </svg>
@@ -299,6 +305,12 @@ export const ui = {
                             <button class="btn-load-history" data-selection-date="${selection.date}" data-ward-name="${selection.ward_name}" data-prima-domenica="${selection.prima_domenica}" data-domenica-festiva="${selection.domenica_festiva}" data-tipo-festivita="${selection.tipo_festivita || ''}" title="Carica questi inni">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M3 12h18M12 3v18"/>
+                                </svg>
+                            </button>
+                            <button class="btn-delete-history" data-selection-date="${selection.date}" data-ward-name="${selection.ward_name}" title="Elimina questa selezione">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                                 </svg>
                             </button>
                             <svg class="toggle-arrow" id="arrow-${index}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

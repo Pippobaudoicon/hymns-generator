@@ -151,6 +151,12 @@ function handleDynamicClicks(e) {
         const btn = target.closest('.btn-load-history');
         loadHistoricalSelection(btn);
     }
+
+    // Delete history button
+    if (target.closest('.btn-delete-history')) {
+        const btn = target.closest('.btn-delete-history');
+        deleteHistoricalSelection(btn);
+    }
 }
 
 /**
@@ -489,6 +495,53 @@ async function loadHistoricalSelection(button) {
         document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
     } catch (error) {
         ui.showError('resultsSection', error.message);
+    }
+}
+
+/**
+ * Delete historical selection with confirmation
+ */
+async function deleteHistoricalSelection(button) {
+    const selectionDate = button.dataset.selectionDate;
+    const wardName = button.dataset.wardName;
+    
+    // Format date for display
+    const displayDate = new Date(selectionDate).toLocaleDateString('it-IT', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+    
+    // Confirm deletion
+    if (!confirm(`Sei sicuro di voler eliminare la selezione per ${wardName} del ${displayDate}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/v1/ward_history/${encodeURIComponent(wardName)}?selection_date=${selectionDate}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Errore durante l\'eliminazione');
+        }
+        
+        // Refresh the current view
+        if (state.currentHistoryWard) {
+            // We're in ward-specific view
+            loadWardHistory(state.currentHistoryWard);
+        } else {
+            // We're in recent selections view
+            loadRecentSelections();
+        }
+        
+        // Show success message (optional)
+        alert('Selezione eliminata con successo');
+        
+    } catch (error) {
+        alert(`Errore: ${error.message}`);
     }
 }
 

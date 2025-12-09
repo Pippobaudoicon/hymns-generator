@@ -775,6 +775,34 @@ button:disabled {
 
 .historical-notice.editable {
     background: #d1ecf1;
-    color: #0c5460;
+    color: #0c6022;
     border: 1px solid #bee5eb;
+}
+
+/* Delete History Button */
+.btn-delete-history {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.btn-delete-history:hover {
+    background: #c82333;
+    transform: scale(1.05);
+}
+
+.btn-delete-history:active {
+    transform: scale(0.98);
+}
+
+.btn-delete-history svg {
+    stroke-width: 2.5;
 }

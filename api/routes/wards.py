@@ -1,15 +1,16 @@
 """Ward management and history endpoints."""
 
-from fastapi import APIRouter, Query, HTTPException, Depends, Body
-from typing import List
-from sqlalchemy.orm import Session
 import logging
+from typing import List
 
-from database.models import Ward
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+
+from config.settings import settings
 from database.database import get_database_session
 from database.history_service import HymnHistoryService
+from database.models import Ward
 from hymns.service import HymnService
-from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -144,3 +145,34 @@ def get_ward_history(
     except Exception as e:
         logger.error(f"Error getting ward history: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve ward history")
+
+
+@router.delete("/ward_history/{ward_name}", summary="Delete a hymn selection from ward history")
+def delete_ward_selection(
+    ward_name: str,
+    selection_date: str = Query(..., description="Selection date in YYYY-MM-DD format"),
+    history_service: HymnHistoryService = Depends(get_history_service)
+) -> dict:
+    """Delete a specific hymn selection from a ward's history."""
+    try:
+        from datetime import datetime
+
+        # Parse the date
+        try:
+            parsed_date = datetime.strptime(selection_date, "%Y-%m-%d")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+        
+        # Delete the selection
+        deleted = history_service.delete_selection(ward_name, parsed_date)
+        
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Selection not found")
+        
+        return {"message": f"Selection for {ward_name} on {selection_date} deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting ward selection: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete selection")

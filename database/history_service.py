@@ -200,6 +200,57 @@ class HymnHistoryService:
             logger.info(f"Saved hymn selection for ward '{ward_name}' with {len(hymns)} hymns")
             return selection
     
+    def delete_selection(
+        self,
+        ward_name: str,
+        selection_date: datetime
+    ) -> bool:
+        """
+        Delete a hymn selection from the database.
+        
+        Args:
+            ward_name: Name of the ward
+            selection_date: Date of the selection to delete
+        
+        Returns:
+            True if deleted, False if not found
+        """
+        with db_manager.session_scope() as session:
+            # Get ward
+            ward = session.query(Ward).filter(Ward.name == ward_name).first()
+            if not ward:
+                logger.warning(f"Ward '{ward_name}' not found")
+                return False
+            
+            # Find the selection
+            selection_date_only = selection_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            selection = (
+                session.query(HymnSelection)
+                .filter(
+                    and_(
+                        HymnSelection.ward_id == ward.id,
+                        HymnSelection.selection_date >= selection_date_only,
+                        HymnSelection.selection_date < selection_date_only + timedelta(days=1)
+                    )
+                )
+                .first()
+            )
+            
+            if not selection:
+                logger.warning(f"Selection not found for ward '{ward_name}' on {selection_date}")
+                return False
+            
+            # Delete associated hymns (cascade should handle this, but being explicit)
+            for hymn in selection.hymns:
+                session.delete(hymn)
+            
+            # Delete the selection
+            session.delete(selection)
+            session.commit()
+            
+            logger.info(f"Deleted hymn selection for ward '{ward_name}' on {selection_date}")
+            return True
+    
     def get_ward_history(self, ward_name: str, limit: int = 10) -> List[dict]:
         """Get recent hymn selection history for a ward."""
         with db_manager.session_scope() as session:
