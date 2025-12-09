@@ -12,6 +12,7 @@ eggs/
 .eggs/
 lib/
 lib64/
+lib64/
 parts/
 sdist/
 var/
@@ -90,6 +91,7 @@ coverage.xml
 
 # Database
 *.db
+*.db-*
 *.sqlite
 *.sqlite3
 data/*.db
