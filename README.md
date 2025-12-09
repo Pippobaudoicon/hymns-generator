@@ -10,10 +10,11 @@ A professional-grade RESTful API for managing and retrieving Italian hymns for t
 ## ✨ Features
 
 - **Smart Hymn Selection**: Intelligent algorithms to avoid recently used hymns
+- **Sunday Date Tracking**: Automatically tracks hymns for the upcoming Sunday
 - **Ward Management**: Track hymn usage per ward to ensure variety
 - **Special Occasions**: Support for Christmas, Easter, and other festivities
 - **RESTful API**: Clean, well-documented endpoints
-- **Database Tracking**: SQLAlchemy-based history tracking
+- **Database Tracking**: SQLAlchemy-based history tracking with selection dates
 - **CLI Tools**: Comprehensive command-line interface
 - **Comprehensive Testing**: Full test coverage with pytest
 - **CI/CD Ready**: GitHub Actions workflow included
@@ -28,6 +29,9 @@ make install
 
 # Initialize database
 make db-init
+
+# If upgrading from an older version, run migration
+python database/migrations/add_updated_at_column.py
 
 # Run development server
 make run
@@ -45,6 +49,9 @@ pip install -r requirements.txt
 
 # Initialize database
 python cli.py db init
+
+# If upgrading from an older version, run migration
+python database/migrations/add_updated_at_column.py
 
 # Run server
 python cli.py serve --reload
@@ -78,18 +85,34 @@ Once the server is running, visit:
 
 ### Main Endpoints
 
-#### Get Hymns for Service
+#### Get Hymns for Service (Smart Selection)
+```http
+GET /api/v1/get_hymns_smart?ward_name=MyWard&prima_domenica=false&domenica_festiva=false
+```
+
+Returns a list of hymns for a church service with smart selection to avoid repetition. **Automatically tracks the selection for the upcoming Sunday.**
+
+**Query Parameters:**
+- `ward_name` (string, required): Ward name for history tracking
+- `prima_domenica` (bool): First Sunday (fast & testimony) - returns 3 hymns instead of 4
+- `domenica_festiva` (bool): Festive Sunday (requires `tipo_festivita`)
+- `tipo_festivita` (string): Type of festivity (`natale` or `pasqua`)
+- `save_selection` (bool, default: true): Save this selection to database
+- `selection_date` (string, optional): Selection date in YYYY-MM-DD format (defaults to next Sunday)
+
+**Note:** When `selection_date` is not provided, the system automatically calculates and uses the date of the **next upcoming Sunday**. This ensures that hymn selections are always associated with the correct Sunday service date for future reference and historical tracking.
+
+#### Get Hymns (Basic)
 ```http
 GET /api/v1/get_hymns?prima_domenica=false&domenica_festiva=false
 ```
 
-Returns a list of hymns for a church service with smart selection to avoid repetition.
+Returns a list of hymns without smart selection or history tracking.
 
 **Query Parameters:**
 - `prima_domenica` (bool): First Sunday (fast & testimony) - returns 3 hymns instead of 4
 - `domenica_festiva` (bool): Festive Sunday (requires `tipo_festivita`)
 - `tipo_festivita` (string): Type of festivity (`natale` or `pasqua`)
-- `ward_name` (string): Ward name for history tracking
 
 #### Get Single Hymn
 ```http
@@ -127,7 +150,8 @@ hymns-generator/
 ├── config/                # Configuration
 │   └── settings.py        # Application settings
 ├── utils/                 # Utilities
-│   └── scraper.py         # Data scraping utilities
+│   ├── scraper.py         # Data scraping utilities
+│   └── date_utils.py      # Date utility functions (Sunday calculation)
 ├── tests/                 # Test suite
 │   ├── conftest.py        # Pytest configuration
 │   ├── test_api.py        # API tests

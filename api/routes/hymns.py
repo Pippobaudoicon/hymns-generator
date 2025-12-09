@@ -1,19 +1,18 @@
 """Hymn-related endpoints."""
 
-from fastapi import APIRouter, Query, HTTPException, Depends
-from typing import Optional
-from datetime import datetime
 import logging
+from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from hymns.service import HymnService
-from hymns.models import (
-    Hymn, HymnList, HymnFilter, 
-    FestivityType
-)
-from hymns.exceptions import HymnAPIException
 from config.settings import settings
 from database.history_service import HymnHistoryService
+from hymns.exceptions import HymnAPIException
+from hymns.models import FestivityType, Hymn, HymnFilter, HymnList
+from hymns.service import HymnService
+from utils.date_utils import get_next_sunday
 
 logger = logging.getLogger(__name__)
 
@@ -80,13 +79,15 @@ def get_hymns_smart(
     aren't repeated within a 5-Sunday window.
     """
     try:
-        # Parse selection date if provided
-        parsed_date = None
+        # Parse selection date if provided, otherwise use next Sunday
         if selection_date:
             try:
                 parsed_date = datetime.strptime(selection_date, "%Y-%m-%d")
             except ValueError:
                 raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+        else:
+            # Default to next Sunday if no date provided
+            parsed_date = get_next_sunday()
         
         # Get smart hymn selection
         hymns = history_service.get_smart_hymns(

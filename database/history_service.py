@@ -3,13 +3,15 @@
 import logging
 from datetime import datetime, timedelta
 from typing import List, Optional, Set
-from sqlalchemy.orm import Session
-from sqlalchemy import desc, and_
 
-from database.models import Ward, HymnSelection, SelectedHymn
+from sqlalchemy import and_, desc
+from sqlalchemy.orm import Session
+
 from database.database import db_manager
-from hymns.models import Hymn, FestivityType
+from database.models import HymnSelection, SelectedHymn, Ward
+from hymns.models import FestivityType, Hymn
 from hymns.service import HymnService
+from utils.date_utils import get_next_sunday
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,7 @@ class HymnHistoryService:
             session.flush()  # Get the ID
         return ward
     
-    def get_recent_hymn_numbers(self, ward_name: str, session: Session, weeks_back: int = None) -> Set[int]:
+    def get_recent_hymn_numbers(self, ward_name: str, session: Session, weeks_back: Optional[int] = None) -> Set[int]:
         """Get hymn numbers used in the last N weeks for a ward."""
         if weeks_back is None:
             weeks_back = self.lookback_weeks
@@ -88,7 +90,7 @@ class HymnHistoryService:
             List of selected hymns
         """
         if selection_date is None:
-            selection_date = datetime.now()
+            selection_date = get_next_sunday()
         
         with db_manager.session_scope() as session:
             # Get recently used hymns
@@ -166,7 +168,7 @@ class HymnHistoryService:
             The saved HymnSelection object
         """
         if selection_date is None:
-            selection_date = datetime.now()
+            selection_date = get_next_sunday()
         
         with db_manager.session_scope() as session:
             # Get or create ward
@@ -245,7 +247,7 @@ class HymnHistoryService:
         prima_domenica: bool = False,
         domenica_festiva: bool = False,
         tipo_festivita: Optional[FestivityType] = None,
-        exclude_numbers: Set[int] = None
+        exclude_numbers: Optional[Set[int]] = None
     ) -> Hymn:
         """
         Get a random replacement hymn for a specific position.
@@ -298,7 +300,7 @@ class HymnHistoryService:
         prima_domenica: bool = False,
         domenica_festiva: bool = False,
         tipo_festivita: Optional[FestivityType] = None,
-        exclude_numbers: Set[int] = None
+        exclude_numbers: Optional[Set[int]] = None
     ) -> List[Hymn]:
         """
         Get all available hymns for a specific position.
@@ -385,6 +387,9 @@ class HymnHistoryService:
             hymn_to_update.hymn_number = new_hymn.number
             hymn_to_update.hymn_title = new_hymn.title
             hymn_to_update.hymn_category = new_hymn.category
+            
+            # Touch the parent selection to update the updated_at timestamp
+            most_recent.updated_at = datetime.utcnow()  # type: ignore
             
             session.commit()
             logger.info(f"Updated hymn at position {position} for ward '{ward_name}': #{old_number} -> #{new_hymn.number}")

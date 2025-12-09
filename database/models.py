@@ -1,9 +1,10 @@
 """Database models for hymn selection history."""
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, ForeignKey
+from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from datetime import datetime
 
 Base = declarative_base()
 
@@ -31,6 +32,7 @@ class HymnSelection(Base):
     domenica_festiva = Column(Boolean, default=False)
     tipo_festivita = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationship to ward and hymns
     ward = relationship("Ward", back_populates="hymn_selections")
