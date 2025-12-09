@@ -32,7 +32,7 @@ def get_wards(db: Session = Depends(get_database_session)) -> List[str]:
     """Get list of all ward names from the database."""
     try:
         wards = db.query(Ward).order_by(Ward.name).all()
-        return [w.name for w in wards]
+        return [str(w.name) for w in wards]
     except Exception as e:
         logger.error(f"Error getting wards: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve wards")
@@ -86,7 +86,7 @@ def update_ward(
             raise HTTPException(status_code=404, detail="Ward not found")
         if db.query(Ward).filter(Ward.name == new_name).first():
             raise HTTPException(status_code=400, detail="New ward name already exists")
-        ward.name = new_name
+        ward.name = new_name  # type: ignore[assignment]
         db.commit()
         db.refresh(ward)
         return {"message": f"Ward '{ward_name}' renamed to '{new_name}'."}
