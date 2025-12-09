@@ -29,18 +29,31 @@ export const ui = {
     /**
      * Display hymns in the results section
      */
-    displayHymns(hymns, wardName, primaDomenica, domenicaFestiva, tipoFestivita) {
-        const today = new Date().toLocaleDateString('it-IT', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+    displayHymns(hymns, wardName, primaDomenica, domenicaFestiva, tipoFestivita, isHistorical = false, selectionDate = null) {
+        const today = new Date().toLocaleDateString('it-IT', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
         });
+
+        // Determine if we can edit (current or future date)
+        const canEdit = !isHistorical || (selectionDate && new Date(selectionDate) >= new Date().setHours(0, 0, 0, 0));
+        const displayDate = isHistorical && selectionDate
+            ? new Date(selectionDate).toLocaleDateString('it-IT', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })
+            : today;
 
         let html = `
             <div class="results-header">
-                <h2>Inni Selezionati</h2>
-                <div class="date-info">${today}</div>
+                <h2>${isHistorical ? 'Inni dalla Cronologia' : 'Inni Selezionati'}</h2>
+                <div class="date-info">${displayDate}</div>
+                ${isHistorical && !canEdit ? '<div class="historical-notice">⚠️ Selezione passata - Solo visualizzazione</div>' : ''}
+                ${isHistorical && canEdit ? '<div class="historical-notice editable">✏️ Puoi modificare questa selezione</div>' : ''}
             </div>
             <div class="ward-info">
                 ${wardName ? `<strong>Rione:</strong> ${wardName}` : '<em>Selezione casuale (senza rione)</em>'}
@@ -61,7 +74,7 @@ export const ui = {
                 metaInfo.push(`Autore: ${hymn.authors.join(', ')}`);
             }
             
-            // Always show swap buttons (both for ward and random selection)
+            // Show swap buttons only if editing is allowed
             html += `
                 <div class="hymn-card" id="hymn-card-${index + 1}">
                     <span class="hymn-position">${index + 1}</span>
@@ -77,10 +90,12 @@ export const ui = {
                             </audio>
                         </div>
                     ` : ''}
-                    <div class="hymn-actions">
-                        <button class="btn-swap random" data-position="${index + 1}" data-category="${hymnCategory}">Altro casuale</button>
-                        ${wardName ? `<button class="btn-swap choose" data-position="${index + 1}" data-category="${hymnCategory}">Scegli inno</button>` : ''}
-                    </div>
+                    ${canEdit ? `
+                        <div class="hymn-actions">
+                            <button class="btn-swap random" data-position="${index + 1}" data-category="${hymnCategory}">Altro casuale</button>
+                            ${wardName ? `<button class="btn-swap choose" data-position="${index + 1}" data-category="${hymnCategory}">Scegli inno</button>` : ''}
+                        </div>
+                    ` : ''}
                 </div>
             `;
         });
@@ -204,9 +219,16 @@ export const ui = {
                                     ${selection.domenica_festiva ? `<span class="history-badge festiva">${selection.tipo_festivita || 'Festiva'}</span>` : ''}
                                 </div>
                             </div>
-                            <svg class="toggle-arrow" id="arrow-${index}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6,9 12,15 18,9"/>
-                            </svg>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <button class="btn-load-history" data-selection-date="${selection.date}" data-ward-name="${data.ward_name}" data-prima-domenica="${selection.prima_domenica}" data-domenica-festiva="${selection.domenica_festiva}" data-tipo-festivita="${selection.tipo_festivita || ''}" title="Carica questi inni">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 12h18M12 3v18"/>
+                                    </svg>
+                                </button>
+                                <svg class="toggle-arrow" id="arrow-${index}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6,9 12,15 18,9"/>
+                                </svg>
+                            </div>
                         </div>
                         <div class="history-selection-hymns" id="hymns-${index}">
                 `;
@@ -273,9 +295,16 @@ export const ui = {
                                 ${selection.domenica_festiva ? `<span class="history-badge festiva">${selection.tipo_festivita || 'Festiva'}</span>` : ''}
                             </div>
                         </div>
-                        <svg class="toggle-arrow" id="arrow-${index}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6,9 12,15 18,9"/>
-                        </svg>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <button class="btn-load-history" data-selection-date="${selection.date}" data-ward-name="${selection.ward_name}" data-prima-domenica="${selection.prima_domenica}" data-domenica-festiva="${selection.domenica_festiva}" data-tipo-festivita="${selection.tipo_festivita || ''}" title="Carica questi inni">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 12h18M12 3v18"/>
+                                </svg>
+                            </button>
+                            <svg class="toggle-arrow" id="arrow-${index}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6,9 12,15 18,9"/>
+                            </svg>
+                        </div>
                     </div>
                     <div class="history-selection-hymns" id="hymns-${index}">
             `;

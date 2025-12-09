@@ -12,7 +12,9 @@ const state = {
     currentSelectionParams: {},
     selectedPosition: null,
     availableHymns: [],
-    currentHistoryWard: null
+    currentHistoryWard: null,
+    isHistoricalView: false,
+    historicalDate: null
 };
 
 /**
@@ -142,6 +144,12 @@ function handleDynamicClicks(e) {
     // History back button
     if (target.closest('#historyBackBtn')) {
         goBackToWardsList();
+    }
+
+    // Load history button
+    if (target.closest('.btn-load-history')) {
+        const btn = target.closest('.btn-load-history');
+        loadHistoricalSelection(btn);
     }
 }
 
@@ -401,6 +409,86 @@ async function loadRecentSelections() {
         ui.displayRecentSelections(recentSelections);
     } catch (error) {
         ui.showError('historyPanelContent', error.message);
+    }
+}
+
+/**
+ * Load historical selection into main form
+ */
+async function loadHistoricalSelection(button) {
+    const id = button.dataset.id;
+    const selectionDate = button.dataset.selectionDate;
+    const wardName = button.dataset.wardName;
+    const primaDomenica = button.dataset.primaDomenica === 'true';
+    const domenicaFestiva = button.dataset.domenicaFestiva === 'true';
+    const tipoFestivita = button.dataset.tipoFestivita || '';
+
+    // Close history panel
+    ui.showHistoryPanel(false);
+
+    // Update form fields to match the historical selection
+    document.getElementById('wardName').value = wardName;
+    document.getElementById('primaDomenica').checked = primaDomenica;
+    document.getElementById('domenicaFestiva').checked = domenicaFestiva;
+    document.getElementById('tipoFestivita').value = tipoFestivita;
+    document.getElementById('festivitaGroup').style.display = domenicaFestiva ? 'block' : 'none';
+
+    // Load the hymns for that date
+    ui.showLoading('resultsSection', 'Caricamento inni dalla cronologia');
+
+    try {
+        const data = await api.getWardHistory(wardName, 50); // Get history (API limit is 50)
+        const selection = data.history.find(s => s.date === selectionDate);
+        
+        if (!selection) {
+            throw new Error('Selezione non trovata');
+        }
+
+        // Fetch full hymn data including audio URLs for each hymn
+        const hymnPromises = selection.hymns.map(async (h) => {
+            try {
+                // Fetch the full hymn data by number to get audio URL
+                const response = await fetch(`/api/v1/get_hymn?number=${h.hymn_number}`);
+                if (response.ok) {
+                    const fullHymn = await response.json();
+                    return fullHymn || {
+                        number: h.hymn_number,
+                        title: h.hymn_title,
+                        category: h.hymn_category,
+                        audio_url: null,
+                        composers: [],
+                        authors: []
+                    };
+                }
+            } catch (error) {
+                console.warn(`Failed to fetch full data for hymn ${h.hymn_number}:`, error);
+            }
+            // Fallback to basic data if fetch fails
+            return {
+                number: h.hymn_number,
+                title: h.hymn_title,
+                category: h.hymn_category,
+                audio_url: null,
+                composers: [],
+                authors: []
+            };
+        });
+
+        const hymns = await Promise.all(hymnPromises);
+
+        // Update state
+        state.currentHymns = hymns;
+        state.currentSelectionParams = { wardName, primaDomenica, domenicaFestiva, tipoFestivita };
+        state.isHistoricalView = true;
+        state.historicalDate = selectionDate;
+
+        // Display hymns with historical flag
+        ui.displayHymns(hymns, wardName, primaDomenica, domenicaFestiva, tipoFestivita, true, selectionDate);
+        
+        // Scroll to results
+        document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+    } catch (error) {
+        ui.showError('resultsSection', error.message);
     }
 }
 
