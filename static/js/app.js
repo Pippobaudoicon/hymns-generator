@@ -34,8 +34,8 @@ async function loadWardsDropdown() {
         const wards = await api.getWards();
         wards.forEach(ward => {
             const option = document.createElement('option');
-            option.value = ward;
-            option.textContent = ward;
+            option.value = ward.name;
+            option.textContent = ward.name;
             wardSelect.appendChild(option);
         });
     } catch (error) {

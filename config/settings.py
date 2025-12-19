@@ -1,6 +1,7 @@
 """Configuration settings for the Italian Hymns API."""
 
 import os
+import secrets
 from pathlib import Path
 from typing import Optional
 
@@ -30,6 +31,11 @@ class Settings:
     
     # API settings
     API_PREFIX: str = os.getenv("API_PREFIX", "/api/v1")
+    
+    # JWT Authentication settings
+    SECRET_KEY: str = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours
     @classmethod
     def get_data_path(cls) -> str:
         """Get the path to the hymns data file."""

@@ -13,6 +13,9 @@ A professional-grade RESTful API for managing and retrieving Italian hymns for t
 - **Sunday Date Tracking**: Automatically tracks hymns for the upcoming Sunday
 - **Ward Management**: Track hymn usage per ward to ensure variety
 - **Special Occasions**: Support for Christmas, Easter, and other festivities
+- **JWT Authentication**: Secure login with role-based access control
+- **Admin Panel**: Web-based management for users, areas, stakes, and wards
+- **Role Hierarchy**: Superadmin → Area Manager → Stake Manager → Ward User
 - **RESTful API**: Clean, well-documented endpoints
 - **Database Tracking**: SQLAlchemy-based history tracking with selection dates
 - **CLI Tools**: Comprehensive command-line interface
@@ -50,8 +53,12 @@ pip install -r requirements.txt
 # Initialize database
 python cli.py db init
 
-# If upgrading from an older version, run migration
+# If upgrading from an older version, run migrations
 python database/migrations/add_updated_at_column.py
+python database/migrations/add_auth_tables.py
+
+# Create superadmin user
+python scripts/create_superadmin.py
 
 # Run server
 python cli.py serve --reload
@@ -82,6 +89,8 @@ Once the server is running, visit:
 - **Interactive API docs**: http://localhost:8000/docs
 - **Alternative docs**: http://localhost:8000/redoc
 - **Web Interface**: http://localhost:8000/
+- **Login Page**: http://localhost:8000/login
+- **Admin Panel**: http://localhost:8000/admin
 
 ### Main Endpoints
 
@@ -129,6 +138,60 @@ Returns a single hymn filtered by number, category, or tag.
 - `GET /api/v1/wards` - List all wards
 - `GET /api/v1/wards/{ward_name}/history` - Ward selection history
 
+### 🔐 Authentication Endpoints
+
+#### Login
+```http
+POST /auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=myuser&password=mypassword
+```
+
+Returns a JWT access token:
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer"
+}
+```
+
+#### Get Current User
+```http
+GET /auth/me
+Authorization: Bearer <token>
+```
+
+#### User Management (Admin only)
+- `GET /auth/users` - List all users
+- `POST /auth/users` - Create new user
+- `GET /auth/users/{id}` - Get user by ID
+- `PUT /auth/users/{id}` - Update user
+- `DELETE /auth/users/{id}` - Delete user
+- `PUT /auth/users/{id}/wards` - Assign wards to user
+
+### 🏛️ Organization Endpoints
+
+#### Areas (Superadmin only)
+- `GET /areas` - List all areas
+- `POST /areas` - Create new area
+- `GET /areas/{id}` - Get area by ID
+- `PUT /areas/{id}` - Update area
+- `DELETE /areas/{id}` - Delete area
+
+#### Stakes (Area Managers+)
+- `GET /stakes` - List all stakes
+- `POST /stakes` - Create new stake
+- `GET /stakes/{id}` - Get stake by ID
+- `PUT /stakes/{id}` - Update stake
+- `DELETE /stakes/{id}` - Delete stake
+
+#### Wards (Stake Managers+)
+- `GET /wards` - List all wards
+- `POST /wards` - Create new ward
+- `PUT /wards/{id}` - Update ward
+- `DELETE /wards/{id}` - Delete ward
+
 ## 🏗️ Project Structure
 
 ```
@@ -149,6 +212,13 @@ hymns-generator/
 │   └── history_service.py # History tracking service
 ├── config/                # Configuration
 │   └── settings.py        # Application settings
+├── auth/                  # Authentication module
+│   ├── models.py          # User, Area, Stake models
+│   ├── schemas.py         # Pydantic schemas
+│   ├── utils.py           # JWT and password utilities
+│   ├── dependencies.py    # Auth dependencies
+│   ├── routes.py          # Auth routes
+│   └── organization_routes.py # Area/Stake routes
 ├── utils/                 # Utilities
 │   ├── scraper.py         # Data scraping utilities
 │   └── date_utils.py      # Date utility functions (Sunday calculation)
@@ -165,7 +235,19 @@ hymns-generator/
 │   ├── italian_hymns_full.json
 │   └── italian_hymns.csv
 ├── static/                # Static files
-│   └── index.html         # Web interface
+│   ├── index.html         # Web interface
+│   ├── login.html         # Login page
+│   ├── admin.html         # Admin panel
+│   ├── css/
+│   │   ├── styles.css     # Main styles
+│   │   ├── auth.css       # Authentication styles
+│   │   └── admin.css      # Admin panel styles
+│   └── js/
+│       ├── app.js         # Main application
+│       ├── api.js         # API module
+│       ├── ui.js          # UI module
+│       ├── auth.js        # Authentication service
+│       └── admin.js       # Admin panel logic
 ├── .github/               # GitHub configuration
 │   └── workflows/
 │       └── ci.yml         # CI/CD pipeline
@@ -315,6 +397,9 @@ Key variables:
 - `PORT`: Server port (default: 8000)
 - `DATABASE_URL`: Database connection string
 - `DATA_PATH`: Path to hymns data file
+- `SECRET_KEY`: JWT signing secret (required for auth)
+- `ALGORITHM`: JWT algorithm (default: HS256)
+- `ACCESS_TOKEN_EXPIRE_MINUTES`: Token expiration (default: 1440 = 24h)
 
 ## 📊 Testing
 

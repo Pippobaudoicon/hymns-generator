@@ -1,14 +1,16 @@
 """Database setup and connection management."""
 
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool
 from contextlib import contextmanager
 from pathlib import Path
 
-from .models import Base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
+
 from config.settings import settings
+
+from .models import Base
 
 
 class DatabaseManager:
@@ -61,10 +63,28 @@ class DatabaseManager:
             raise
         finally:
             session.close()
+    
+    @contextmanager
+    def get_session_context(self):
+        """Context manager for database sessions (alias for session_scope)."""
+        session = self.get_session()
+        try:
+            yield session
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
 
 
 # Global database manager instance
 db_manager = DatabaseManager()
+
+
+def get_db_manager() -> DatabaseManager:
+    """Get the global database manager instance."""
+    return db_manager
 
 
 from typing import Generator
@@ -82,4 +102,6 @@ def get_database_session() -> Generator[Session, None, None]:
 
 def init_database():
     """Initialize the database with tables."""
+    # Import auth models to register them with Base
+    from auth.models import Area, Stake, User, user_ward_association
     db_manager.create_tables()

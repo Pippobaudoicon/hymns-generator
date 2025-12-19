@@ -1,15 +1,52 @@
 /**
- * API Module - Handles all API calls
+ * API Module - Handles all API calls with authentication
  */
 
 const API_BASE_URL = 'api/v1';
+
+/**
+ * Get auth headers from authService
+ */
+function getAuthHeaders() {
+    // authService is loaded globally before this module
+    if (typeof authService !== 'undefined' && authService.getToken()) {
+        return {
+            'Authorization': `Bearer ${authService.getToken()}`
+        };
+    }
+    return {};
+}
+
+/**
+ * Make authenticated fetch request
+ */
+async function authenticatedFetch(url, options = {}) {
+    const headers = {
+        ...options.headers,
+        ...getAuthHeaders()
+    };
+    
+    const response = await fetch(url, { ...options, headers });
+    
+    // If unauthorized, redirect to login
+    if (response.status === 401) {
+        if (typeof authService !== 'undefined') {
+            authService.logout();
+        } else {
+            window.location.href = '/static/login.html';
+        }
+        throw new Error('Session expired');
+    }
+    
+    return response;
+}
 
 export const api = {
     /**
      * Fetch all wards
      */
     async getWards() {
-        const response = await fetch(`${API_BASE_URL}/wards`);
+        const response = await authenticatedFetch(`${API_BASE_URL}/wards`);
         if (!response.ok) {
             throw new Error('Failed to fetch wards');
         }
@@ -34,7 +71,7 @@ export const api = {
             url += `&tipo_festivita=${tipoFestivita}`;
         }
 
-        const response = await fetch(url);
+        const response = await authenticatedFetch(url);
         
         if (!response.ok) {
             const errorData = await response.json();
@@ -48,9 +85,12 @@ export const api = {
      * Swap a hymn
      */
     async swapHymn(position, currentHymnNumber, wardName, domenicaFestiva, tipoFestivita, newHymnNumber = null) {
-        const response = await fetch(`${API_BASE_URL}/swap_hymn`, {
+        const response = await authenticatedFetch(`${API_BASE_URL}/swap_hymn`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify({
                 position,
                 current_hymn_number: currentHymnNumber,
@@ -82,7 +122,7 @@ export const api = {
             }
         }
         
-        const response = await fetch(url);
+        const response = await authenticatedFetch(url);
         
         if (!response.ok) {
             const errorData = await response.json();
@@ -96,7 +136,7 @@ export const api = {
      * Get ward history
      */
     async getWardHistory(wardName, limit = 20) {
-        const response = await fetch(`${API_BASE_URL}/ward_history/${encodeURIComponent(wardName)}?limit=${limit}`);
+        const response = await authenticatedFetch(`${API_BASE_URL}/ward_history/${encodeURIComponent(wardName)}?limit=${limit}`);
         
         if (!response.ok) {
             throw new Error('Errore nel caricamento');

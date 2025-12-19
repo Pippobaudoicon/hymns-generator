@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Selettore Inni</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/auth.css">
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="admin-nav">
+        <div class="nav-brand">
+            <a href="/">Selettore Inni</a>
+            <span class="nav-divider">|</span>
+            <span>Area Amministrazione</span>
+        </div>
+        <div class="nav-user">
+            <span id="currentUserDisplay"></span>
+            <button class="btn-nav" onclick="window.location.href='/'">← Torna all'App</button>
+            <button class="btn-nav btn-logout" onclick="logout()">Esci</button>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">Panoramica</div>
+                <a href="#" class="nav-item active" data-section="dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                    </svg>
+                    Dashboard
+                </a>
+                
+                <div class="sidebar-section">Gestione</div>
+                <a href="#" class="nav-item" data-section="users" data-role="superadmin,area_manager,stake_manager">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Utenti
+                </a>
+                
+                <div class="sidebar-section">Organizzazione</div>
+                <a href="#" class="nav-item" data-section="areas" data-role="superadmin">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                    Aree
+                </a>
+                <a href="#" class="nav-item" data-section="stakes" data-role="superadmin,area_manager">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    Pali
+                </a>
+                <a href="#" class="nav-item" data-section="wards" data-role="superadmin,area_manager,stake_manager">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    Rioni
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Dashboard Section -->
+            <section id="section-dashboard" class="admin-section active">
+                <div class="section-header">
+                    <h1>Dashboard</h1>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-users">-</span>
+                            <span class="stat-label">Utenti</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🌍</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-areas">-</span>
+                            <span class="stat-label">Aree</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🏠</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-stakes">-</span>
+                            <span class="stat-label">Pali</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⛪</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-wards">-</span>
+                            <span class="stat-label">Rioni</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="welcome-card">
+                    <h2>Benvenuto, <span id="welcomeUserName"></span>! <span id="welcomeUserRole" class="role-badge"></span></h2>
+                    <p class="welcome-text">
+                        Da qui puoi gestire utenti, aree, pali e rioni in base ai tuoi permessi.
+                        Utilizza il menu laterale per navigare tra le diverse sezioni.
+                    </p>
+                    
+                    <div class="quick-actions">
+                        <a href="#" class="quick-action-card" onclick="switchSection('users'); return false;">
+                            <div class="icon">👥</div>
+                            <div class="text">
+                                <h4>Gestisci Utenti</h4>
+                                <p>Crea e modifica account utente</p>
+                            </div>
+                        </a>
+                        <a href="#" class="quick-action-card" onclick="switchSection('wards'); return false;">
+                            <div class="icon">⛪</div>
+                            <div class="text">
+                                <h4>Gestisci Rioni</h4>
+                                <p>Configura i rioni disponibili</p>
+                            </div>
+                        </a>
+                        <a href="/" class="quick-action-card">
+                            <div class="icon">🎵</div>
+                            <div class="text">
+                                <h4>Selettore Inni</h4>
+                                <p>Torna all'applicazione principale</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Users Section -->
+            <section id="section-users" class="admin-section">
+                <div class="section-header">
+                    <h1>Gestione Utenti</h1>
+                    <button class="btn-primary" onclick="showCreateUserModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Nuovo Utente
+                    </button>
+                </div>
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Nome</th>
+                                <th>Ruolo</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr><td colspan="6" class="loading">Caricamento...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Areas Section -->
+            <section id="section-areas" class="admin-section">
+                <div class="section-header">
+                    <h1>Gestione Aree</h1>
+                    <button class="btn-primary" onclick="showCreateAreaModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Nuova Area
+                    </button>
+                </div>
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nome Area</th>
+                                <th>Numero Pali</th>
+                                <th>Data Creazione</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="areasTableBody">
+                            <tr><td colspan="4" class="loading">Caricamento...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Stakes Section -->
+            <section id="section-stakes" class="admin-section">
+                <div class="section-header">
+                    <h1>Gestione Pali</h1>
+                    <button class="btn-primary" onclick="showCreateStakeModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Nuovo Palo
+                    </button>
+                </div>
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nome Palo</th>
+                                <th>Area</th>
+                                <th>Numero Rioni</th>
+                                <th>Data Creazione</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stakesTableBody">
+                            <tr><td colspan="5" class="loading">Caricamento...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Wards Section -->
+            <section id="section-wards" class="admin-section">
+                <div class="section-header">
+                    <h1>Gestione Rioni</h1>
+                    <button class="btn-primary" onclick="showCreateWardModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Nuovo Rione
+                    </button>
+                </div>
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nome Rione</th>
+                                <th>Palo</th>
+                                <th>Data Creazione</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wardsTableBody">
+                            <tr><td colspan="4" class="loading">Caricamento...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal Template -->
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 id="modalTitle">Titolo</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Dynamic content -->
+            </div>
+            <div class="modal-footer" id="modalFooter">
+                <!-- Dynamic buttons -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

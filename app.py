@@ -7,15 +7,18 @@ including middleware, exception handlers, and route registration.
 
 import logging
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from api.routes import router
-from hymns.exceptions import HymnAPIException
+from auth.organization_routes import router as org_router
+from auth.routes import router as auth_router
 from config.settings import settings
 from database.database import init_database
+from hymns.exceptions import HymnAPIException
 
 # Configure logging
 logging.basicConfig(
@@ -79,6 +82,10 @@ async def general_exception_handler(request: Request, exc: Exception):
 # Include API router
 app.include_router(router, prefix=settings.API_PREFIX)
 
+# Include auth routes at root level (without /api/v1 prefix)
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(org_router, tags=["Organization"])
+
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -87,6 +94,18 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 def read_root():
     """Serve the hymn selector web interface."""
     return FileResponse("static/index.html")
+
+# Login page
+@app.get("/login", tags=["Root"])
+def login_page():
+    """Serve the login page."""
+    return FileResponse("static/login.html")
+
+# Admin page
+@app.get("/admin", tags=["Root"])
+def admin_page():
+    """Serve the admin page."""
+    return FileResponse("static/admin.html")
 
 if __name__ == "__main__":
     import uvicorn
