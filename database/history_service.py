@@ -24,16 +24,22 @@ class HymnHistoryService:
         self.hymn_service = hymn_service
         self.lookback_weeks = 5  # Don't repeat hymns within 5 weeks
     
-    def get_or_create_ward(self, ward_name: str, session: Session) -> Ward:
-        """Get or create a ward by name."""
-        ward = session.query(Ward).filter(Ward.name == ward_name).first()
-        if not ward:
-            ward = Ward(name=ward_name)
-            session.add(ward)
-            session.flush()  # Get the ID
+    def get_or_create_ward(self, ward_id: int = None, ward_name: str = None, session: Session = None) -> Ward:
+        """Get ward by id or get/create by name."""
+        ward = None
+        if ward_id is not None:
+            ward = session.query(Ward).filter(Ward.id == ward_id).first()
+            return ward
+
+        if ward_name:
+            ward = session.query(Ward).filter(Ward.name == ward_name).first()
+            if not ward:
+                ward = Ward(name=ward_name)
+                session.add(ward)
+                session.flush()  # Get the ID
         return ward
     
-    def get_recent_hymn_numbers(self, ward_name: str, session: Session, weeks_back: Optional[int] = None) -> Set[int]:
+    def get_recent_hymn_numbers(self, ward_id: int = None, ward_name: str = None, session: Session = None, weeks_back: Optional[int] = None) -> Set[int]:
         """Get hymn numbers used in the last N weeks for a ward."""
         if weeks_back is None:
             weeks_back = self.lookback_weeks
@@ -41,17 +47,13 @@ class HymnHistoryService:
         cutoff_date = datetime.now() - timedelta(weeks=weeks_back)
         
         # Get recent selections for this ward
-        recent_selections = (
-            session.query(HymnSelection)
-            .join(Ward)
-            .filter(
-                and_(
-                    Ward.name == ward_name,
-                    HymnSelection.selection_date >= cutoff_date
-                )
-            )
-            .all()
-        )
+        query = session.query(HymnSelection).join(Ward).filter(HymnSelection.selection_date >= cutoff_date)
+        if ward_id is not None:
+            query = query.filter(Ward.id == ward_id)
+        elif ward_name:
+            query = query.filter(Ward.name == ward_name)
+
+        recent_selections = query.all()
         
         # Collect all hymn numbers from these selections
         used_hymns = set()
@@ -70,7 +72,8 @@ class HymnHistoryService:
     
     def get_smart_hymns(
         self,
-        ward_name: str,
+        ward_id: int = None,
+        ward_name: str = None,
         prima_domenica: bool = False,
         domenica_festiva: bool = False,
         tipo_festivita: Optional[FestivityType] = None,
@@ -93,8 +96,8 @@ class HymnHistoryService:
             selection_date = get_next_sunday()
         
         with db_manager.session_scope() as session:
-            # Get recently used hymns
-            used_hymns = self.get_recent_hymn_numbers(ward_name, session)
+            # Get recently used hymns (prefer id)
+            used_hymns = self.get_recent_hymn_numbers(ward_id=ward_id, ward_name=ward_name, session=session)
             
             # Get all available hymns using the existing service
             hymn_count = 3 if prima_domenica else 4
@@ -106,7 +109,7 @@ class HymnHistoryService:
             # If no Sacramento hymns are available, expand the lookback
             if not available_sacramento:
                 logger.warning("No available Sacramento hymns, expanding lookback period")
-                used_hymns = self.get_recent_hymn_numbers(ward_name, session, weeks_back=3)
+                used_hymns = self.get_recent_hymn_numbers(ward_name=ward_name, session=session, weeks_back=3)
                 available_sacramento = self.filter_available_hymns(sacramento_hymns, used_hymns)
                 
                 # If still no Sacramento hymns, use any Sacramento hymn (it's required)
@@ -122,7 +125,7 @@ class HymnHistoryService:
             required_other_hymns = hymn_count - 1  # -1 for the Sacramento hymn
             if len(available_other) < required_other_hymns:
                 logger.warning(f"Not enough other hymns available ({len(available_other)} < {required_other_hymns}), expanding lookback")
-                used_hymns = self.get_recent_hymn_numbers(ward_name, session, weeks_back=3)
+                used_hymns = self.get_recent_hymn_numbers(ward_name=ward_name, session=session, weeks_back=3)
                 available_other = self.filter_available_hymns(other_hymns, used_hymns)
                 
                 # If still not enough, use original selection logic
@@ -141,13 +144,14 @@ class HymnHistoryService:
             else:
                 hymns_list = [selected_other[0], selected_sacramento] + selected_other[1:]
             
-            logger.info(f"Selected {len(hymns_list)} hymns with smart filtering for ward '{ward_name}'")
+            logger.info(f"Selected {len(hymns_list)} hymns with smart filtering for ward '{ward_name or ward_id}'")
             return hymns_list
     
     def save_selection(
         self,
-        ward_name: str,
         hymns: List[Hymn],
+        ward_id: int = None,
+        ward_name: str = None,
         prima_domenica: bool = False,
         domenica_festiva: bool = False,
         tipo_festivita: Optional[FestivityType] = None,
@@ -171,8 +175,14 @@ class HymnHistoryService:
             selection_date = get_next_sunday()
         
         with db_manager.session_scope() as session:
-            # Get or create ward
-            ward = self.get_or_create_ward(ward_name, session)
+            # Get or create ward (prefer id)
+            ward = None
+            if ward_id is not None:
+                ward = session.query(Ward).filter(Ward.id == ward_id).first()
+                if not ward:
+                    raise ValueError(f"Ward id {ward_id} not found")
+            else:
+                ward = self.get_or_create_ward(ward_id=None, ward_name=ward_name, session=session)
             
             # Create selection record
             selection = HymnSelection(
@@ -197,13 +207,14 @@ class HymnHistoryService:
                 session.add(selected_hymn)
             
             session.commit()
-            logger.info(f"Saved hymn selection for ward '{ward_name}' with {len(hymns)} hymns")
+            logger.info(f"Saved hymn selection for ward '{ward.name if ward else ward_id}' with {len(hymns)} hymns")
             return selection
     
     def delete_selection(
         self,
-        ward_name: str,
-        selection_date: datetime
+        ward_id: int = None,
+        ward_name: str = None,
+        selection_date: datetime = None
     ) -> bool:
         """
         Delete a hymn selection from the database.
@@ -216,8 +227,12 @@ class HymnHistoryService:
             True if deleted, False if not found
         """
         with db_manager.session_scope() as session:
-            # Get ward
-            ward = session.query(Ward).filter(Ward.name == ward_name).first()
+            # Get ward by id or name
+            ward = None
+            if ward_id is not None:
+                ward = session.query(Ward).filter(Ward.id == ward_id).first()
+            elif ward_name:
+                ward = session.query(Ward).filter(Ward.name == ward_name).first()
             if not ward:
                 logger.warning(f"Ward '{ward_name}' not found")
                 return False
@@ -248,20 +263,20 @@ class HymnHistoryService:
             session.delete(selection)
             session.commit()
             
-            logger.info(f"Deleted hymn selection for ward '{ward_name}' on {selection_date}")
+            logger.info(f"Deleted hymn selection for ward '{ward.name if ward else ward_id}' on {selection_date}")
             return True
     
-    def get_ward_history(self, ward_name: str, limit: int = 10) -> List[dict]:
+    def get_ward_history(self, ward_id: int = None, ward_name: str = None, limit: int = 10) -> List[dict]:
         """Get recent hymn selection history for a ward."""
         with db_manager.session_scope() as session:
-            selections = (
-                session.query(HymnSelection)
-                .join(Ward)
-                .filter(Ward.name == ward_name)
-                .order_by(desc(HymnSelection.selection_date))
-                .limit(limit)
-                .all()
-            )
+            query = session.query(HymnSelection).join(Ward)
+            if ward_id is not None:
+                query = query.filter(Ward.id == ward_id)
+            elif ward_name:
+                query = query.filter(Ward.name == ward_name)
+
+            query = query.order_by(desc(HymnSelection.selection_date)).limit(limit)
+            selections = query.all()
             
             # Convert to dictionaries to avoid session issues
             result = []
@@ -285,16 +300,17 @@ class HymnHistoryService:
             
             return result
     
-    def get_all_wards(self) -> List[str]:
+    def get_all_wards(self) -> List[dict]:
         """Get list of all ward names."""
         with db_manager.session_scope() as session:
-            wards = session.query(Ward.name).all()
-            return [ward.name for ward in wards]
+            wards = session.query(Ward).order_by(Ward.name).all()
+            return [{'id': w.id, 'name': w.name} for w in wards]
     
     def get_replacement_hymn(
         self,
         position: int,
-        ward_name: str,
+        ward_id: int = None,
+        ward_name: str = None,
         prima_domenica: bool = False,
         domenica_festiva: bool = False,
         tipo_festivita: Optional[FestivityType] = None,
@@ -320,8 +336,8 @@ class HymnHistoryService:
             exclude_numbers = set()
         
         with db_manager.session_scope() as session:
-            # Get recently used hymns
-            used_hymns = self.get_recent_hymn_numbers(ward_name, session)
+            # Get recently used hymns (prefer id)
+            used_hymns = self.get_recent_hymn_numbers(ward_id=ward_id, ward_name=ward_name, session=session)
             
             # Combine with explicitly excluded hymns
             all_excluded = used_hymns | exclude_numbers
@@ -347,7 +363,8 @@ class HymnHistoryService:
     def get_available_hymns(
         self,
         position: int,
-        ward_name: str,
+        ward_id: int = None,
+        ward_name: str = None,
         prima_domenica: bool = False,
         domenica_festiva: bool = False,
         tipo_festivita: Optional[FestivityType] = None,
@@ -371,8 +388,8 @@ class HymnHistoryService:
             exclude_numbers = set()
         
         with db_manager.session_scope() as session:
-            # Get recently used hymns
-            used_hymns = self.get_recent_hymn_numbers(ward_name, session)
+            # Get recently used hymns (prefer id)
+            used_hymns = self.get_recent_hymn_numbers(ward_id=ward_id, ward_name=ward_name, session=session)
             
             # Combine with explicitly excluded hymns
             all_excluded = used_hymns | exclude_numbers
@@ -393,9 +410,10 @@ class HymnHistoryService:
 
     def update_hymn_in_selection(
         self,
-        ward_name: str,
         position: int,
-        new_hymn: Hymn
+        new_hymn: Hymn,
+        ward_id: int = None,
+        ward_name: str = None,
     ) -> bool:
         """
         Update a hymn in the most recent selection for a ward.
@@ -410,13 +428,17 @@ class HymnHistoryService:
         """
         with db_manager.session_scope() as session:
             # Get the most recent selection for this ward
-            most_recent = (
+            query = (
                 session.query(HymnSelection)
                 .join(Ward)
-                .filter(Ward.name == ward_name)
                 .order_by(desc(HymnSelection.selection_date))
-                .first()
             )
+            if ward_id is not None:
+                query = query.filter(Ward.id == ward_id)
+            elif ward_name:
+                query = query.filter(Ward.name == ward_name)
+
+            most_recent = query.first()
             
             if not most_recent:
                 logger.warning(f"No selection found for ward '{ward_name}' to update")
@@ -443,5 +465,5 @@ class HymnHistoryService:
             most_recent.updated_at = datetime.utcnow()  # type: ignore
             
             session.commit()
-            logger.info(f"Updated hymn at position {position} for ward '{ward_name}': #{old_number} -> #{new_hymn.number}")
+            logger.info(f"Updated hymn at position {position} for ward '{ward_name or ward_id}': #{old_number} -> #{new_hymn.number}")
             return True

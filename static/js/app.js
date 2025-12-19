@@ -34,7 +34,7 @@ async function loadWardsDropdown() {
         const wards = await api.getWards();
         wards.forEach(ward => {
             const option = document.createElement('option');
-            option.value = ward.name;
+            option.value = ward.id;
             option.textContent = ward.name;
             wardSelect.appendChild(option);
         });
@@ -126,9 +126,10 @@ function handleDynamicClicks(e) {
     // Ward list item click
     if (target.closest('.ward-list-item')) {
         const item = target.closest('.ward-list-item');
+        const wardId = item.dataset.wardId ? parseInt(item.dataset.wardId, 10) : null;
         const wardName = item.dataset.wardName;
-        if (wardName) {
-            loadWardHistory(wardName);
+        if (wardId) {
+            loadWardHistory(wardId, wardName);
         }
     }
 
@@ -163,9 +164,11 @@ function handleDynamicClicks(e) {
  * Get hymns based on form inputs
  */
 async function getHymns() {
-    const wardName = document.getElementById('wardName').value.trim();
+    const wardSelect = document.getElementById('wardName');
+    const wardId = wardSelect.value ? parseInt(wardSelect.value, 10) : null;
+    const wardName = wardSelect.selectedOptions && wardSelect.selectedOptions[0] ? wardSelect.selectedOptions[0].textContent : '';
     const primaDomenica = document.getElementById('primaDomenica').checked;
-    const domenicaFestiva = document.getElementById('domenicaFestiva').checked;
+        const domenicaFestiva = document.getElementById('domenicaFestiva').checked;
     const tipoFestivita = document.getElementById('tipoFestivita').value;
 
     if (domenicaFestiva && !tipoFestivita) {
@@ -176,9 +179,9 @@ async function getHymns() {
     ui.showLoading('resultsSection', 'Caricamento inni');
 
     try {
-        const data = await api.getHymns(wardName, primaDomenica, domenicaFestiva, tipoFestivita);
+        const data = await api.getHymns(wardId, primaDomenica, domenicaFestiva, tipoFestivita);
         state.currentHymns = data.hymns;
-        state.currentSelectionParams = { wardName, primaDomenica, domenicaFestiva, tipoFestivita };
+        state.currentSelectionParams = { wardId, wardName, primaDomenica, domenicaFestiva, tipoFestivita };
         ui.displayHymns(data.hymns, wardName, primaDomenica, domenicaFestiva, tipoFestivita);
     } catch (error) {
         ui.showError('resultsSection', error.message);
@@ -189,7 +192,7 @@ async function getHymns() {
  * Swap hymn with random selection
  */
 async function swapRandom(position, category) {
-    const { wardName, primaDomenica, domenicaFestiva, tipoFestivita } = state.currentSelectionParams;
+    const { wardId, wardName, primaDomenica, domenicaFestiva, tipoFestivita } = state.currentSelectionParams;
     
     // If no ward is selected, regenerate all hymns and pick the one at the position
     if (!wardName) {
@@ -214,7 +217,7 @@ async function swapRandom(position, category) {
     const currentHymnNumber = state.currentHymns[position - 1].number || state.currentHymns[position - 1].songNumber;
     
     try {
-        const newHymn = await api.swapHymn(position, currentHymnNumber, wardName, domenicaFestiva, tipoFestivita);
+        const newHymn = await api.swapHymn(position, currentHymnNumber, wardId, domenicaFestiva, tipoFestivita);
         state.currentHymns[position - 1] = newHymn;
         ui.displayHymns(
             state.currentHymns,
@@ -233,7 +236,7 @@ async function swapRandom(position, category) {
  */
 async function openHymnSelector(position, category) {
     state.selectedPosition = position;
-    const { wardName, domenicaFestiva, tipoFestivita } = state.currentSelectionParams;
+    const { wardId, wardName, domenicaFestiva, tipoFestivita } = state.currentSelectionParams;
     
     document.getElementById('modalTitle').textContent = `Seleziona Inno (Posizione ${position})`;
     document.getElementById('hymnSearch').value = '';
@@ -241,7 +244,7 @@ async function openHymnSelector(position, category) {
     ui.showModal(true);
     
     try {
-        const data = await api.getAvailableHymns(position, category, wardName, domenicaFestiva, tipoFestivita);
+        const data = await api.getAvailableHymns(position, category, wardId, domenicaFestiva, tipoFestivita);
         state.availableHymns = data.hymns || [];
         const currentHymnNumber = state.currentHymns[position - 1].number || state.currentHymns[position - 1].songNumber;
         ui.displayHymnList(state.availableHymns, currentHymnNumber);
@@ -269,7 +272,7 @@ function filterHymnList() {
  * Select a specific hymn
  */
 async function selectHymn(hymnNumber) {
-    const { wardName, domenicaFestiva, tipoFestivita } = state.currentSelectionParams;
+    const { wardId, wardName, domenicaFestiva, tipoFestivita } = state.currentSelectionParams;
     const currentHymnNumber = state.currentHymns[state.selectedPosition - 1].number || 
                              state.currentHymns[state.selectedPosition - 1].songNumber;
     
@@ -279,7 +282,7 @@ async function selectHymn(hymnNumber) {
         const newHymn = await api.swapHymn(
             state.selectedPosition, 
             currentHymnNumber, 
-            wardName, 
+            wardId, 
             domenicaFestiva, 
             tipoFestivita, 
             hymnNumber
@@ -303,9 +306,11 @@ async function selectHymn(hymnNumber) {
 function viewHistory() {
     ui.showHistoryPanel(true);
     
-    const wardName = document.getElementById('wardName').value.trim();
-    if (wardName) {
-        loadWardHistory(wardName);
+    const wardSelect = document.getElementById('wardName');
+    const wardId = wardSelect.value ? parseInt(wardSelect.value, 10) : null;
+    const wardName = wardSelect.selectedOptions && wardSelect.selectedOptions[0] ? wardSelect.selectedOptions[0].textContent : '';
+    if (wardId) {
+        loadWardHistory(wardId, wardName);
     } else {
         switchHistoryTab('wards');
         loadWardsList();
@@ -351,15 +356,15 @@ async function loadWardsList() {
 /**
  * Load ward history
  */
-async function loadWardHistory(wardName) {
-    state.currentHistoryWard = wardName;
+async function loadWardHistory(wardId, wardName) {
+    state.currentHistoryWard = wardId;
     ui.updateHistoryPanelTitle(`📜 ${wardName}`, false);
     ui.showLoading('historyPanelContent', 'Caricamento cronologia');
 
     try {
-        const data = await api.getWardHistory(wardName);
+        const data = await api.getWardHistory(wardId);
         ui.displayWardHistory(data);
-        
+
         // Expand the first selection by default
         if (data.history.length > 0) {
             setTimeout(() => ui.toggleHistorySelection(0), 100);
@@ -396,15 +401,16 @@ async function loadRecentSelections() {
         const allSelections = [];
         for (const ward of wards) {
             try {
-                const data = await api.getWardHistory(ward, 5);
+                const data = await api.getWardHistory(ward.id, 5);
                 data.history.forEach(sel => {
                     allSelections.push({
                         ...sel,
-                        ward_name: ward
+                        ward_name: ward.name,
+                        ward_id: ward.id
                     });
                 });
             } catch (e) {
-                console.warn(`Failed to load history for ${ward}:`, e);
+                console.warn(`Failed to load history for ${ward.name}:`, e);
             }
         }
 
@@ -433,7 +439,10 @@ async function loadHistoricalSelection(button) {
     ui.showHistoryPanel(false);
 
     // Update form fields to match the historical selection
-    document.getElementById('wardName').value = wardName;
+    const wardId = button.dataset.wardId ? parseInt(button.dataset.wardId, 10) : null;
+    if (wardId) {
+        document.getElementById('wardName').value = wardId;
+    }
     document.getElementById('primaDomenica').checked = primaDomenica;
     document.getElementById('domenicaFestiva').checked = domenicaFestiva;
     document.getElementById('tipoFestivita').value = tipoFestivita;
@@ -443,7 +452,8 @@ async function loadHistoricalSelection(button) {
     ui.showLoading('resultsSection', 'Caricamento inni dalla cronologia');
 
     try {
-        const data = await api.getWardHistory(wardName, 50); // Get history (API limit is 50)
+        const wardId = button.dataset.wardId ? parseInt(button.dataset.wardId, 10) : null;
+        const data = await api.getWardHistory(wardId, 50); // Get history (API limit is 50)
         const selection = data.history.find(s => s.date === selectionDate);
         
         if (!selection) {
@@ -484,7 +494,7 @@ async function loadHistoricalSelection(button) {
 
         // Update state
         state.currentHymns = hymns;
-        state.currentSelectionParams = { wardName, primaDomenica, domenicaFestiva, tipoFestivita };
+        state.currentSelectionParams = { wardId, wardName, primaDomenica, domenicaFestiva, tipoFestivita };
         state.isHistoricalView = true;
         state.historicalDate = selectionDate;
 
@@ -519,7 +529,8 @@ async function deleteHistoricalSelection(button) {
     }
     
     try {
-        const response = await fetch(`/api/v1/ward_history/${encodeURIComponent(wardName)}?selection_date=${selectionDate}`, {
+        const wardId = button.dataset.wardId ? parseInt(button.dataset.wardId, 10) : null;
+        const response = await fetch(`/api/v1/ward_history/${encodeURIComponent(wardId)}?selection_date=${selectionDate}`, {
             method: 'DELETE'
         });
         

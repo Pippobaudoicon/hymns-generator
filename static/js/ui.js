@@ -155,11 +155,11 @@ export const ui = {
 
         let html = '<div class="ward-list">';
         wards.forEach(ward => {
-            const initial = ward.charAt(0).toUpperCase();
+            const initial = ward.name.charAt(0).toUpperCase();
             html += `
-                <div class="ward-list-item" data-ward-name="${ward.replace(/'/g, "\\'")}">
+                <div class="ward-list-item" data-ward-id="${ward.id}" data-ward-name="${ward.name.replace(/'/g, "\\'")}">
                     <div class="ward-icon">${initial}</div>
-                    <div class="ward-name">${ward}</div>
+                    <div class="ward-name">${ward.name}</div>
                     <span class="ward-arrow">›</span>
                 </div>
             `;
@@ -220,12 +220,12 @@ export const ui = {
                                 </div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <button class="btn-load-history" data-selection-date="${selection.date}" data-ward-name="${data.ward_name}" data-prima-domenica="${selection.prima_domenica}" data-domenica-festiva="${selection.domenica_festiva}" data-tipo-festivita="${selection.tipo_festivita || ''}" title="Carica questi inni">
+                                <button class="btn-load-history" data-selection-date="${selection.date}" data-ward-id="${data.ward_id}" data-ward-name="${data.ward_name}" data-prima-domenica="${selection.prima_domenica}" data-domenica-festiva="${selection.domenica_festiva}" data-tipo-festivita="${selection.tipo_festivita || ''}" title="Carica questi inni">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M3 12h18M12 3v18"/>
                                     </svg>
                                 </button>
-                                <button class="btn-delete-history" data-selection-date="${selection.date}" data-ward-name="${data.ward_name}" title="Elimina questa selezione">
+                                <button class="btn-delete-history" data-selection-date="${selection.date}" data-ward-id="${data.ward_id}" data-ward-name="${data.ward_name}" title="Elimina questa selezione">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <polyline points="3 6 5 6 21 6"/>
                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -302,12 +302,12 @@ export const ui = {
                             </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <button class="btn-load-history" data-selection-date="${selection.date}" data-ward-name="${selection.ward_name}" data-prima-domenica="${selection.prima_domenica}" data-domenica-festiva="${selection.domenica_festiva}" data-tipo-festivita="${selection.tipo_festivita || ''}" title="Carica questi inni">
+                            <button class="btn-load-history" data-selection-date="${selection.date}" data-ward-id="${selection.ward_id}" data-ward-name="${selection.ward_name}" data-prima-domenica="${selection.prima_domenica}" data-domenica-festiva="${selection.domenica_festiva}" data-tipo-festivita="${selection.tipo_festivita || ''}" title="Carica questi inni">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M3 12h18M12 3v18"/>
                                 </svg>
                             </button>
-                            <button class="btn-delete-history" data-selection-date="${selection.date}" data-ward-name="${selection.ward_name}" title="Elimina questa selezione">
+                            <button class="btn-delete-history" data-selection-date="${selection.date}" data-ward-id="${selection.ward_id}" data-ward-name="${selection.ward_name}" title="Elimina questa selezione">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="3 6 5 6 21 6"/>
                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>

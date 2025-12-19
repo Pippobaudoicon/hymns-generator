@@ -29,7 +29,8 @@ class SwapHymnRequest(BaseModel):
     """Request body for swapping a hymn."""
     position: int
     current_hymn_number: int
-    ward_name: str
+    ward_id: int = None
+    ward_name: str = None
     domenica_festiva: bool = False
     tipo_festivita: Optional[str] = None
     new_hymn_number: Optional[int] = None  # If None, get a random one
@@ -45,12 +46,17 @@ def get_history_service(hymn_service: HymnService = Depends(get_hymn_service)) -
 
 
 async def verify_ward_access_for_hymns(
-    ward_name: str,
-    current_user: User,
-    db: Session
+    ward_id: int = None,
+    ward_name: str = None,
+    current_user: User = None,
+    db: Session = None
 ) -> Ward:
     """Verify user has access to the ward for hymn operations."""
-    ward = db.query(Ward).filter(Ward.name == ward_name).first()
+    ward = None
+    if ward_id:
+        ward = db.query(Ward).filter(Ward.id == ward_id).first()
+    elif ward_name:
+        ward = db.query(Ward).filter(Ward.name == ward_name).first()
     if not ward:
         raise HTTPException(status_code=404, detail="Ward not found")
     
@@ -89,7 +95,8 @@ def get_hymns(
 
 @router.get("/get_hymns_smart", response_model=HymnList, summary="Get smart hymns for ward service")
 async def get_hymns_smart(
-    ward_name: str = Query(..., description="Ward (congregation) name"),
+    ward_id: int = Query(None, description="Ward ID (preferred)"),
+    ward_name: str = Query(None, description="Ward (congregation) name (fallback)"),
     prima_domenica: bool = Query(False, description="First Sunday of month (3 hymns instead of 4)"),
     domenica_festiva: bool = Query(False, description="Festive Sunday"),
     tipo_festivita: Optional[FestivityType] = Query(None, description="Type of festivity (required if domenica_festiva=true)"),
@@ -106,8 +113,8 @@ async def get_hymns_smart(
     aren't repeated within a 5-Sunday window.
     """
     try:
-        # Verify ward access
-        await verify_ward_access_for_hymns(ward_name, current_user, db)
+        # Verify ward access (prefer id)
+        await verify_ward_access_for_hymns(ward_id=ward_id, ward_name=ward_name, current_user=current_user, db=db)
         
         # Parse selection date if provided, otherwise use next Sunday
         if selection_date:
@@ -121,6 +128,7 @@ async def get_hymns_smart(
         
         # Get smart hymn selection
         hymns = history_service.get_smart_hymns(
+            ward_id=ward_id,
             ward_name=ward_name,
             prima_domenica=prima_domenica,
             domenica_festiva=domenica_festiva,
@@ -131,6 +139,7 @@ async def get_hymns_smart(
         # Save selection if requested
         if save_selection:
             history_service.save_selection(
+                ward_id=ward_id,
                 ward_name=ward_name,
                 hymns=hymns,
                 prima_domenica=prima_domenica,
@@ -173,7 +182,8 @@ def get_hymn(
 @router.get("/get_replacement_hymn", response_model=Hymn, summary="Get a replacement hymn for a specific position")
 async def get_replacement_hymn(
     position: int = Query(..., ge=1, le=4, description="Position of the hymn to replace (1-4)"),
-    ward_name: str = Query(..., description="Ward name for smart selection"),
+    ward_id: int = Query(None, description="Ward ID (preferred)"),
+    ward_name: str = Query(None, description="Ward name (fallback)"),
     prima_domenica: bool = Query(False, description="First Sunday of month"),
     domenica_festiva: bool = Query(False, description="Festive Sunday"),
     tipo_festivita: Optional[FestivityType] = Query(None, description="Type of festivity"),
@@ -188,8 +198,8 @@ async def get_replacement_hymn(
     Excludes hymns specified in exclude_numbers to avoid duplicates.
     """
     try:
-        # Verify ward access
-        await verify_ward_access_for_hymns(ward_name, current_user, db)
+        # Verify ward access (prefer id)
+        await verify_ward_access_for_hymns(ward_id=ward_id, ward_name=ward_name, current_user=current_user, db=db)
         
         # Parse excluded hymn numbers
         excluded = set()
@@ -199,6 +209,7 @@ async def get_replacement_hymn(
         # Get replacement hymn
         hymn = history_service.get_replacement_hymn(
             position=position,
+            ward_id=ward_id,
             ward_name=ward_name,
             prima_domenica=prima_domenica,
             domenica_festiva=domenica_festiva,
@@ -218,7 +229,8 @@ async def get_replacement_hymn(
 @router.get("/get_available_hymns", response_model=HymnList, summary="Get list of available hymns for a position")
 async def get_available_hymns(
     position: int = Query(..., ge=1, le=4, description="Position of the hymn (1-4)"),
-    ward_name: str = Query(..., description="Ward name for smart selection"),
+    ward_id: int = Query(None, description="Ward ID (preferred)"),
+    ward_name: str = Query(None, description="Ward name (fallback)"),
     prima_domenica: bool = Query(False, description="First Sunday of month"),
     domenica_festiva: bool = Query(False, description="Festive Sunday"),
     tipo_festivita: Optional[FestivityType] = Query(None, description="Type of festivity"),
@@ -233,8 +245,8 @@ async def get_available_hymns(
     Excludes hymns used in the last 5 weeks and those specified in exclude_numbers.
     """
     try:
-        # Verify ward access
-        await verify_ward_access_for_hymns(ward_name, current_user, db)
+        # Verify ward access (prefer id)
+        await verify_ward_access_for_hymns(ward_id=ward_id, ward_name=ward_name, current_user=current_user, db=db)
         
         # Parse excluded hymn numbers
         excluded = set()
@@ -244,6 +256,7 @@ async def get_available_hymns(
         # Get available hymns
         hymns = history_service.get_available_hymns(
             position=position,
+            ward_id=ward_id,
             ward_name=ward_name,
             prima_domenica=prima_domenica,
             domenica_festiva=domenica_festiva,
@@ -275,8 +288,8 @@ async def swap_hymn(
     If new_hymn_number is None, get a random replacement hymn.
     """
     try:
-        # Verify ward access
-        await verify_ward_access_for_hymns(request.ward_name, current_user, db)
+        # Verify ward access (prefer id)
+        await verify_ward_access_for_hymns(ward_id=request.ward_id, ward_name=request.ward_name, current_user=current_user, db=db)
         
         # Parse festivita type if provided
         tipo_festivita = None
@@ -296,6 +309,7 @@ async def swap_hymn(
             # Get random replacement
             hymn = history_service.get_replacement_hymn(
                 position=request.position,
+                ward_id=request.ward_id,
                 ward_name=request.ward_name,
                 domenica_festiva=request.domenica_festiva,
                 tipo_festivita=tipo_festivita,
@@ -304,6 +318,7 @@ async def swap_hymn(
         
         # Update the database with the new hymn
         history_service.update_hymn_in_selection(
+            ward_id=request.ward_id,
             ward_name=request.ward_name,
             position=request.position,
             new_hymn=hymn

@@ -218,12 +218,17 @@ def delete_ward(
 # --- Ward History Operations ---
 
 async def verify_ward_access(
-    ward_name: str,
-    current_user: User,
-    db: Session
+    ward_id: int = None,
+    ward_name: str = None,
+    current_user: User = None,
+    db: Session = None
 ) -> Ward:
-    """Verify user has access to the ward and return the ward."""
-    ward = db.query(Ward).filter(Ward.name == ward_name).first()
+    """Verify user has access to the ward and return the ward. Accepts id or name."""
+    ward = None
+    if ward_id is not None:
+        ward = db.query(Ward).filter(Ward.id == ward_id).first()
+    elif ward_name:
+        ward = db.query(Ward).filter(Ward.name == ward_name).first()
     if not ward:
         raise HTTPException(status_code=404, detail="Ward not found")
     
@@ -235,9 +240,9 @@ async def verify_ward_access(
     
     return ward
 
-@router.get("/ward_history/{ward_name}", summary="Get hymn selection history for a ward")
+@router.get("/ward_history/{ward_id}", summary="Get hymn selection history for a ward")
 async def get_ward_history(
-    ward_name: str,
+    ward_id: int,
     limit: int = Query(10, ge=1, le=50, description="Number of recent selections to return"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_database_session),
@@ -246,9 +251,9 @@ async def get_ward_history(
     """Get recent hymn selection history for a specific ward."""
     try:
         # Verify access
-        await verify_ward_access(ward_name, current_user, db)
-        
-        selections = history_service.get_ward_history(ward_name, limit)
+        await verify_ward_access(ward_id=ward_id, current_user=current_user, db=db)
+
+        selections = history_service.get_ward_history(ward_id=ward_id, limit=limit)
         # Convert to response format
         history = []
         for selection in selections:
@@ -260,8 +265,13 @@ async def get_ward_history(
                 "hymns": selection['hymns']
             })
         
+        # Get ward display name
+        ward = db.query(Ward).filter(Ward.id == ward_id).first()
+        display_name = ward.name if ward else None
+
         return {
-            "ward_name": ward_name,
+            "ward_id": ward_id,
+            "ward_name": display_name,
             "history": history,
             "total_selections": len(history)
         }
@@ -273,9 +283,9 @@ async def get_ward_history(
         raise HTTPException(status_code=500, detail="Failed to retrieve ward history")
 
 
-@router.delete("/ward_history/{ward_name}", summary="Delete a hymn selection from ward history")
+@router.delete("/ward_history/{ward_id}", summary="Delete a hymn selection from ward history")
 async def delete_ward_selection(
-    ward_name: str,
+    ward_id: int,
     selection_date: str = Query(..., description="Selection date in YYYY-MM-DD format"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_database_session),
@@ -286,7 +296,7 @@ async def delete_ward_selection(
         from datetime import datetime
 
         # Verify access
-        await verify_ward_access(ward_name, current_user, db)
+        await verify_ward_access(ward_id=ward_id, current_user=current_user, db=db)
 
         # Parse the date
         try:
@@ -295,12 +305,14 @@ async def delete_ward_selection(
             raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
         
         # Delete the selection
-        deleted = history_service.delete_selection(ward_name, parsed_date)
+        deleted = history_service.delete_selection(ward_id=ward_id, ward_name=None, selection_date=parsed_date)
         
         if not deleted:
             raise HTTPException(status_code=404, detail="Selection not found")
         
-        return {"message": f"Selection for {ward_name} on {selection_date} deleted successfully"}
+        ward = db.query(Ward).filter(Ward.id == ward_id).first()
+        display_name = ward.name if ward else ward_id
+        return {"message": f"Selection for {display_name} on {selection_date} deleted successfully"}
         
     except HTTPException:
         raise

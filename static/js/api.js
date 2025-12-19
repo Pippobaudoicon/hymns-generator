@@ -56,12 +56,12 @@ export const api = {
     /**
      * Get hymns with smart selection
      */
-    async getHymns(wardName, primaDomenica, domenicaFestiva, tipoFestivita) {
+    async getHymns(wardId, primaDomenica, domenicaFestiva, tipoFestivita) {
         let url;
         
-        if (wardName) {
-            // Smart selection with ward history
-            url = `${API_BASE_URL}/get_hymns_smart?ward_name=${encodeURIComponent(wardName)}&prima_domenica=${primaDomenica}&domenica_festiva=${domenicaFestiva}`;
+        if (wardId) {
+            // Smart selection with ward history (prefer id)
+            url = `${API_BASE_URL}/get_hymns_smart?ward_id=${encodeURIComponent(wardId)}&prima_domenica=${primaDomenica}&domenica_festiva=${domenicaFestiva}`;
         } else {
             // Simple random selection without history
             url = `${API_BASE_URL}/get_hymns?prima_domenica=${primaDomenica}&domenica_festiva=${domenicaFestiva}`;
@@ -84,7 +84,7 @@ export const api = {
     /**
      * Swap a hymn
      */
-    async swapHymn(position, currentHymnNumber, wardName, domenicaFestiva, tipoFestivita, newHymnNumber = null) {
+    async swapHymn(position, currentHymnNumber, wardId, domenicaFestiva, tipoFestivita, newHymnNumber = null) {
         const response = await authenticatedFetch(`${API_BASE_URL}/swap_hymn`, {
             method: 'POST',
             headers: { 
@@ -94,7 +94,7 @@ export const api = {
             body: JSON.stringify({
                 position,
                 current_hymn_number: currentHymnNumber,
-                ward_name: wardName,
+                ward_id: wardId,
                 domenica_festiva: domenicaFestiva,
                 tipo_festivita: tipoFestivita || null,
                 new_hymn_number: newHymnNumber
@@ -112,8 +112,8 @@ export const api = {
     /**
      * Get available hymns for a position
      */
-    async getAvailableHymns(position, category, wardName, domenicaFestiva, tipoFestivita) {
-        let url = `${API_BASE_URL}/get_available_hymns?position=${position}&category=${encodeURIComponent(category)}&ward_name=${encodeURIComponent(wardName)}`;
+    async getAvailableHymns(position, category, wardId, domenicaFestiva, tipoFestivita) {
+        let url = `${API_BASE_URL}/get_available_hymns?position=${position}&category=${encodeURIComponent(category)}&ward_id=${encodeURIComponent(wardId)}`;
         
         if (domenicaFestiva) {
             url += `&domenica_festiva=true`;
@@ -135,8 +135,8 @@ export const api = {
     /**
      * Get ward history
      */
-    async getWardHistory(wardName, limit = 20) {
-        const response = await authenticatedFetch(`${API_BASE_URL}/ward_history/${encodeURIComponent(wardName)}?limit=${limit}`);
+    async getWardHistory(wardId, limit = 20) {
+        const response = await authenticatedFetch(`${API_BASE_URL}/ward_history/${encodeURIComponent(wardId)}?limit=${limit}`);
         
         if (!response.ok) {
             throw new Error('Errore nel caricamento');
