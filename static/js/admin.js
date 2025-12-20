@@ -216,12 +216,14 @@ async function loadUsers() {
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
                     </button>
+                    ${user.role !== 'superadmin' ? `
                     <button class="btn-icon" onclick="manageUserWards(${user.id})" title="Gestisci Rioni">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                             <circle cx="12" cy="10" r="3"></circle>
                         </svg>
                     </button>
+                    ` : ''}
                     ${user.id !== currentUser.id ? `
                     <button class="btn-icon delete" onclick="deleteUser(${user.id})" title="Elimina">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
