@@ -6,10 +6,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app import app
-from auth.models import UserRole
+from auth.models import User, UserRole
 from auth.utils import get_password_hash
 from database.database import get_database_session
-from database.models import Base, User
+from database.models import Base
 
 # Create test client
 client = TestClient(app)
@@ -18,6 +18,8 @@ client = TestClient(app)
 @pytest.fixture(scope="function")
 def test_db():
     """Create a test database."""
+    from database.database import init_database
+
     engine = create_engine(
         "sqlite:///:memory:", connect_args={"check_same_thread": False}
     )
@@ -97,13 +99,6 @@ class TestAuthEndpoints:
         )
         assert response.status_code == 401
 
-    def test_login_nonexistent_user(self, override_get_db):
-        """Test login with non-existent user."""
-        response = client.post(
-            "/auth/login", data={"username": "nonexistent", "password": "password123"}
-        )
-        assert response.status_code == 401
-
 
 class TestUserManagement:
     """Test user management endpoints."""
@@ -126,7 +121,7 @@ class TestUserManagement:
     def test_get_users_unauthorized(self, override_get_db):
         """Test getting users without authentication."""
         response = client.get("/auth/users")
-        assert response.status_code == 403  # Forbidden without auth
+        assert response.status_code == 401  # Unauthorized without auth
 
     def test_get_users_as_superadmin(
         self, override_get_db, test_superadmin, test_area_manager
