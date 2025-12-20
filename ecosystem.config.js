@@ -1,10 +1,10 @@
 module.exports = {
   apps: [{
     name: 'hymns-generator',
-    script: '.venv/bin/gunicorn',
-    args: '-k uvicorn.workers.UvicornWorker app:app --bind 0.0.0.0:8000 --workers 4 --worker-class uvicorn.workers.UvicornWorker --timeout 120',
+    script: 'app.py',
     cwd: '/var/www/lds/hymns-generator',
-    interpreter: 'none',
+    interpreter: '.venv/bin/python',
+    args: '--workers 4',
     instances: 1,
     autorestart: true,
     watch: false,
