@@ -18,38 +18,44 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
 # Service dependencies
 def get_hymn_service() -> HymnService:
     """Dependency to get hymn service instance."""
     return HymnService(data_path=settings.get_data_path())
 
-def get_history_service(hymn_service: HymnService = Depends(get_hymn_service)) -> HymnHistoryService:
+
+def get_history_service(
+    hymn_service: HymnService = Depends(get_hymn_service),
+) -> HymnHistoryService:
     """Dependency to get hymn history service instance."""
     return HymnHistoryService(hymn_service)
 
+
 # --- Ward CRUD Operations ---
+
 
 @router.get("/wards", response_model=List[dict], summary="Get all wards")
 async def get_wards(
     stake_id: Optional[int] = Query(None, description="Filter by stake ID"),
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_database_session)
+    db: Session = Depends(get_database_session),
 ) -> List[dict]:
     """Get list of all wards from the database. Users only see wards they have access to."""
     try:
         query = db.query(Ward)
-        
+
         # Filter by stake if provided
         if stake_id:
             query = query.filter(Ward.stake_id == stake_id)
-        
+
         # Get accessible ward IDs for the user
         user_role = UserRole(current_user.role)
         if user_role != UserRole.SUPERADMIN:
             accessible_ids = await get_accessible_ward_ids(current_user, db)
             if accessible_ids is not None:
                 query = query.filter(Ward.id.in_(accessible_ids))
-        
+
         wards = query.order_by(Ward.name).all()
         return [
             {
@@ -57,7 +63,7 @@ async def get_wards(
                 "name": w.name,
                 "stake_id": w.stake_id,
                 "stake_name": w.stake.name if w.stake else None,
-                "created_at": w.created_at
+                "created_at": w.created_at,
             }
             for w in wards
         ]
@@ -65,12 +71,19 @@ async def get_wards(
         logger.error(f"Error getting wards: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve wards")
 
+
 @router.post("/ward", summary="Create a new ward")
 def create_ward(
     ward_name: str = Body(..., embed=True, description="Ward (congregation) name"),
-    stake_id: Optional[int] = Body(None, embed=True, description="Stake ID this ward belongs to"),
-    current_user: User = Depends(require_role([UserRole.SUPERADMIN, UserRole.AREA_MANAGER, UserRole.STAKE_MANAGER])),
-    db: Session = Depends(get_database_session)
+    stake_id: Optional[int] = Body(
+        None, embed=True, description="Stake ID this ward belongs to"
+    ),
+    current_user: User = Depends(
+        require_role(
+            [UserRole.SUPERADMIN, UserRole.AREA_MANAGER, UserRole.STAKE_MANAGER]
+        )
+    ),
+    db: Session = Depends(get_database_session),
 ) -> dict:
     """
     Create a new ward in the database.
@@ -80,25 +93,36 @@ def create_ward(
     """
     try:
         user_role = UserRole(current_user.role)
-        
+
         # Validate stake access
         if stake_id:
             stake = db.query(Stake).filter(Stake.id == stake_id).first()
             if not stake:
                 raise HTTPException(status_code=404, detail="Stake not found")
-            
-            if user_role == UserRole.AREA_MANAGER and stake.area_id != current_user.area_id:
-                raise HTTPException(status_code=403, detail="You can only create wards in your area's stakes")
-            
-            if user_role == UserRole.STAKE_MANAGER and stake_id != current_user.stake_id:
-                raise HTTPException(status_code=403, detail="You can only create wards in your stake")
+
+            if (
+                user_role == UserRole.AREA_MANAGER
+                and stake.area_id != current_user.area_id
+            ):
+                raise HTTPException(
+                    status_code=403,
+                    detail="You can only create wards in your area's stakes",
+                )
+
+            if (
+                user_role == UserRole.STAKE_MANAGER
+                and stake_id != current_user.stake_id
+            ):
+                raise HTTPException(
+                    status_code=403, detail="You can only create wards in your stake"
+                )
         elif user_role == UserRole.STAKE_MANAGER:
             stake_id = current_user.stake_id
-        
+
         existing = db.query(Ward).filter(Ward.name == ward_name).first()
         if existing:
             raise HTTPException(status_code=400, detail="Ward already exists")
-        
+
         ward = Ward(name=ward_name, stake_id=stake_id)
         db.add(ward)
         db.commit()
@@ -106,7 +130,7 @@ def create_ward(
         return {
             "message": f"Ward '{ward_name}' created.",
             "id": ward.id,
-            "stake_id": ward.stake_id
+            "stake_id": ward.stake_id,
         }
     except HTTPException:
         raise
@@ -115,11 +139,12 @@ def create_ward(
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to create ward")
 
+
 @router.get("/ward/{ward_name}", summary="Get ward details")
 def get_ward(
     ward_name: str,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_database_session)
+    db: Session = Depends(get_database_session),
 ) -> dict:
     """Get details for a specific ward from the database."""
     try:
@@ -131,7 +156,7 @@ def get_ward(
             "ward_name": ward.name,
             "stake_id": ward.stake_id,
             "stake_name": ward.stake.name if ward.stake else None,
-            "created_at": ward.created_at
+            "created_at": ward.created_at,
         }
     except HTTPException:
         raise
@@ -139,44 +164,59 @@ def get_ward(
         logger.error(f"Error getting ward: {e}")
         raise HTTPException(status_code=500, detail="Failed to get ward")
 
+
 @router.put("/ward/{ward_name}", summary="Update ward name")
 def update_ward(
     ward_name: str,
     new_name: str = Body(None, embed=True, description="New ward name"),
     stake_id: Optional[int] = Body(None, embed=True, description="New stake ID"),
-    current_user: User = Depends(require_role([UserRole.SUPERADMIN, UserRole.AREA_MANAGER, UserRole.STAKE_MANAGER])),
-    db: Session = Depends(get_database_session)
+    current_user: User = Depends(
+        require_role(
+            [UserRole.SUPERADMIN, UserRole.AREA_MANAGER, UserRole.STAKE_MANAGER]
+        )
+    ),
+    db: Session = Depends(get_database_session),
 ) -> dict:
     """Update a ward in the database."""
     try:
         ward = db.query(Ward).filter(Ward.name == ward_name).first()
         if not ward:
             raise HTTPException(status_code=404, detail="Ward not found")
-        
+
         # Check access based on role
         user_role = UserRole(current_user.role)
         if user_role == UserRole.STAKE_MANAGER:
             if ward.stake_id != current_user.stake_id:
-                raise HTTPException(status_code=403, detail="You can only update wards in your stake")
+                raise HTTPException(
+                    status_code=403, detail="You can only update wards in your stake"
+                )
         elif user_role == UserRole.AREA_MANAGER:
             if ward.stake and ward.stake.area_id != current_user.area_id:
-                raise HTTPException(status_code=403, detail="You can only update wards in your area")
-        
+                raise HTTPException(
+                    status_code=403, detail="You can only update wards in your area"
+                )
+
         if new_name:
             if db.query(Ward).filter(Ward.name == new_name, Ward.id != ward.id).first():
-                raise HTTPException(status_code=400, detail="New ward name already exists")
+                raise HTTPException(
+                    status_code=400, detail="New ward name already exists"
+                )
             ward.name = new_name
-        
+
         if stake_id is not None:
             if stake_id:
                 stake = db.query(Stake).filter(Stake.id == stake_id).first()
                 if not stake:
                     raise HTTPException(status_code=404, detail="Stake not found")
             ward.stake_id = stake_id
-        
+
         db.commit()
         db.refresh(ward)
-        return {"message": f"Ward updated successfully.", "id": ward.id, "name": ward.name}
+        return {
+            "message": "Ward updated successfully.",
+            "id": ward.id,
+            "name": ward.name,
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -184,27 +224,36 @@ def update_ward(
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to update ward")
 
+
 @router.delete("/ward/{ward_name}", summary="Delete a ward")
 def delete_ward(
     ward_name: str,
-    current_user: User = Depends(require_role([UserRole.SUPERADMIN, UserRole.AREA_MANAGER, UserRole.STAKE_MANAGER])),
-    db: Session = Depends(get_database_session)
+    current_user: User = Depends(
+        require_role(
+            [UserRole.SUPERADMIN, UserRole.AREA_MANAGER, UserRole.STAKE_MANAGER]
+        )
+    ),
+    db: Session = Depends(get_database_session),
 ) -> dict:
     """Delete a ward from the database."""
     try:
         ward = db.query(Ward).filter(Ward.name == ward_name).first()
         if not ward:
             raise HTTPException(status_code=404, detail="Ward not found")
-        
+
         # Check access based on role
         user_role = UserRole(current_user.role)
         if user_role == UserRole.STAKE_MANAGER:
             if ward.stake_id != current_user.stake_id:
-                raise HTTPException(status_code=403, detail="You can only delete wards in your stake")
+                raise HTTPException(
+                    status_code=403, detail="You can only delete wards in your stake"
+                )
         elif user_role == UserRole.AREA_MANAGER:
             if ward.stake and ward.stake.area_id != current_user.area_id:
-                raise HTTPException(status_code=403, detail="You can only delete wards in your area")
-        
+                raise HTTPException(
+                    status_code=403, detail="You can only delete wards in your area"
+                )
+
         db.delete(ward)
         db.commit()
         return {"message": f"Ward '{ward_name}' deleted."}
@@ -215,13 +264,15 @@ def delete_ward(
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to delete ward")
 
+
 # --- Ward History Operations ---
+
 
 async def verify_ward_access(
     ward_id: int = None,
     ward_name: str = None,
     current_user: User = None,
-    db: Session = None
+    db: Session = None,
 ) -> Ward:
     """Verify user has access to the ward and return the ward. Accepts id or name."""
     ward = None
@@ -231,22 +282,27 @@ async def verify_ward_access(
         ward = db.query(Ward).filter(Ward.name == ward_name).first()
     if not ward:
         raise HTTPException(status_code=404, detail="Ward not found")
-    
+
     user_role = UserRole(current_user.role)
     if user_role != UserRole.SUPERADMIN:
         accessible_ids = await get_accessible_ward_ids(current_user, db)
         if accessible_ids is not None and ward.id not in accessible_ids:
-            raise HTTPException(status_code=403, detail="You don't have access to this ward")
-    
+            raise HTTPException(
+                status_code=403, detail="You don't have access to this ward"
+            )
+
     return ward
+
 
 @router.get("/ward_history/{ward_id}", summary="Get hymn selection history for a ward")
 async def get_ward_history(
     ward_id: int,
-    limit: int = Query(10, ge=1, le=50, description="Number of recent selections to return"),
+    limit: int = Query(
+        10, ge=1, le=50, description="Number of recent selections to return"
+    ),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_database_session),
-    history_service: HymnHistoryService = Depends(get_history_service)
+    history_service: HymnHistoryService = Depends(get_history_service),
 ) -> dict:
     """Get recent hymn selection history for a specific ward."""
     try:
@@ -257,14 +313,16 @@ async def get_ward_history(
         # Convert to response format
         history = []
         for selection in selections:
-            history.append({
-                "date": selection['selection_date'].strftime("%Y-%m-%d"),
-                "prima_domenica": selection['prima_domenica'],
-                "domenica_festiva": selection['domenica_festiva'],
-                "tipo_festivita": selection['tipo_festivita'],
-                "hymns": selection['hymns']
-            })
-        
+            history.append(
+                {
+                    "date": selection["selection_date"].strftime("%Y-%m-%d"),
+                    "prima_domenica": selection["prima_domenica"],
+                    "domenica_festiva": selection["domenica_festiva"],
+                    "tipo_festivita": selection["tipo_festivita"],
+                    "hymns": selection["hymns"],
+                }
+            )
+
         # Get ward display name
         ward = db.query(Ward).filter(Ward.id == ward_id).first()
         display_name = ward.name if ward else None
@@ -273,9 +331,9 @@ async def get_ward_history(
             "ward_id": ward_id,
             "ward_name": display_name,
             "history": history,
-            "total_selections": len(history)
+            "total_selections": len(history),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -283,13 +341,15 @@ async def get_ward_history(
         raise HTTPException(status_code=500, detail="Failed to retrieve ward history")
 
 
-@router.delete("/ward_history/{ward_id}", summary="Delete a hymn selection from ward history")
+@router.delete(
+    "/ward_history/{ward_id}", summary="Delete a hymn selection from ward history"
+)
 async def delete_ward_selection(
     ward_id: int,
     selection_date: str = Query(..., description="Selection date in YYYY-MM-DD format"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_database_session),
-    history_service: HymnHistoryService = Depends(get_history_service)
+    history_service: HymnHistoryService = Depends(get_history_service),
 ) -> dict:
     """Delete a specific hymn selection from a ward's history."""
     try:
@@ -302,18 +362,24 @@ async def delete_ward_selection(
         try:
             parsed_date = datetime.strptime(selection_date, "%Y-%m-%d")
         except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
-        
+            raise HTTPException(
+                status_code=400, detail="Invalid date format. Use YYYY-MM-DD"
+            )
+
         # Delete the selection
-        deleted = history_service.delete_selection(ward_id=ward_id, ward_name=None, selection_date=parsed_date)
-        
+        deleted = history_service.delete_selection(
+            ward_id=ward_id, ward_name=None, selection_date=parsed_date
+        )
+
         if not deleted:
             raise HTTPException(status_code=404, detail="Selection not found")
-        
+
         ward = db.query(Ward).filter(Ward.id == ward_id).first()
         display_name = ward.name if ward else ward_id
-        return {"message": f"Selection for {display_name} on {selection_date} deleted successfully"}
-        
+        return {
+            "message": f"Selection for {display_name} on {selection_date} deleted successfully"
+        }
+
     except HTTPException:
         raise
     except Exception as e:

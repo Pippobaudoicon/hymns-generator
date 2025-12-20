@@ -81,7 +81,9 @@ class TestAPI:
 
     def test_get_hymns_festive(self):
         """Test getting hymns for festive Sunday."""
-        response = client.get("/api/v1/get_hymns?domenica_festiva=true&tipo_festivita=natale")
+        response = client.get(
+            "/api/v1/get_hymns?domenica_festiva=true&tipo_festivita=natale"
+        )
         assert response.status_code == 200
         data = response.json()
         assert "hymns" in data
