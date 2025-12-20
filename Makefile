@@ -52,16 +52,16 @@ test-watch:
 
 # Code quality
 lint:
-	flake8 api/ hymns/ database/ config/ utils/ --max-line-length=120
-	mypy api/ hymns/ database/ config/ utils/ --ignore-missing-imports
+	flake8 api/ auth/ hymns/ database/ config/ utils/ --max-line-length=120
+	mypy api/ auth/ hymns/ database/ config/ utils/ --ignore-missing-imports
 
 format:
-	black api/ hymns/ database/ config/ utils/ tests/ cli.py lds_tools.py
-	isort api/ hymns/ database/ config/ utils/ tests/ cli.py lds_tools.py
+	black api/ auth/ hymns/ database/ config/ utils/ tests/ cli.py
+	isort api/ auth/ hymns/ database/ config/ utils/ tests/ cli.py
 
 check-format:
-	black --check api/ hymns/ database/ config/ utils/ tests/ cli.py lds_tools.py
-	isort --check-only api/ hymns/ database/ config/ utils/ tests/ cli.py lds_tools.py
+	black --check api/ auth/ hymns/ database/ config/ utils/ tests/ cli.py
+	isort --check-only api/ auth/ hymns/ database/ config/ utils/ tests/ cli.py
 
 # Cleanup
 clean:

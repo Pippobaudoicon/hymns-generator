@@ -37,19 +37,19 @@ jobs:
 
     - name: Lint with flake8
       run: |
-        flake8 api/ hymns/ database/ config/ utils/ --max-line-length=120 --count --statistics
+        flake8 api/ auth/ hymns/ database/ config/ utils/ --max-line-length=120 --count --statistics
 
     - name: Check code formatting with black
       run: |
-        black --check api/ hymns/ database/ config/ utils/ tests/ cli.py lds_tools.py
+        black --check api/ auth/ hymns/ database/ config/ utils/ tests/ cli.py
 
     - name: Check import sorting with isort
       run: |
-        isort --check-only api/ hymns/ database/ config/ utils/ tests/ cli.py lds_tools.py
+        isort --check-only api/ auth/ hymns/ database/ config/ utils/ tests/ cli.py
 
     - name: Type check with mypy
       run: |
-        mypy api/ hymns/ database/ config/ utils/ --ignore-missing-imports
+        mypy api/ auth/ hymns/ database/ config/ utils/ --ignore-missing-imports
       continue-on-error: true
 
     - name: Run tests with pytest
