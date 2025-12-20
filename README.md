@@ -369,9 +369,9 @@ pre-commit install
 3. **PM2 Management:**
    ```bash
    pm2 status                    # Check status
-   pm2 logs italian-hymns-api    # View logs
-   pm2 restart italian-hymns-api # Restart
-   pm2 reload italian-hymns-api  # Zero-downtime reload
+   pm2 logs hymns-generator    # View logs
+   pm2 restart hymns-generator # Restart
+   pm2 reload hymns-generator  # Zero-downtime reload
    pm2 monit                     # Monitor resources
    ```
 

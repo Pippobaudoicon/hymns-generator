@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-APP_NAME="italian-hymns-api"
+APP_NAME="hymns-generator"
 DEPLOY_USER="${DEPLOY_USER:-appuser}"
 DEPLOY_PATH="${DEPLOY_PATH:-/opt/$APP_NAME}"
 VENV_PATH="$DEPLOY_PATH/.venv"

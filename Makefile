@@ -86,19 +86,19 @@ pm2-start:
 	pm2 start ecosystem.config.js
 
 pm2-stop:
-	pm2 stop italian-hymns-api
+	pm2 stop hymns-generator
 
 pm2-restart:
-	pm2 restart italian-hymns-api
+	pm2 restart hymns-generator
 
 pm2-reload:
-	pm2 reload italian-hymns-api
+	pm2 reload hymns-generator
 
 pm2-delete:
-	pm2 delete italian-hymns-api
+	pm2 delete hymns-generator
 
 pm2-logs:
-	pm2 logs italian-hymns-api
+	pm2 logs hymns-generator
 
 pm2-status:
 	pm2 status
