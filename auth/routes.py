@@ -385,6 +385,7 @@ def delete_user(
 # --- Ward Assignment Endpoints ---
 
 @router.post("/users/{user_id}/wards", response_model=UserWardResponse, summary="Assign wards to user")
+@router.put("/users/{user_id}/wards", response_model=UserWardResponse, summary="Assign wards to user")
 def assign_wards_to_user(
     user_id: int,
     ward_ids: List[int] = Body(..., embed=True),
