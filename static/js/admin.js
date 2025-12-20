@@ -35,6 +35,13 @@ document.addEventListener('DOMContentLoaded', async () => {
  * Initialize UI with user data
  */
 function initializeUI() {
+    // Show menu toggle on mobile
+    const isMobile = window.innerWidth <= 768;
+    const menuToggle = document.getElementById('menuToggle');
+    if (menuToggle) {
+        menuToggle.style.display = isMobile ? 'flex' : 'none';
+    }
+    
     // Set user info in nav
     document.getElementById('currentUserDisplay').textContent = 
         currentUser.full_name || currentUser.username;
@@ -57,6 +64,44 @@ function initializeUI() {
 }
 
 /**
+ * Toggle mobile sidebar menu
+ */
+function toggleMobileMenu() {
+    const sidebar = document.querySelector('.admin-sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('open');
+    }
+}
+
+/**
+ * Close mobile menu when clicking a nav item
+ */
+function closeMobileMenu() {
+    const sidebar = document.querySelector('.admin-sidebar');
+    if (sidebar && window.innerWidth <= 768) {
+        sidebar.classList.remove('open');
+    }
+}
+
+/**
+ * Handle window resize to show/hide menu toggle
+ */
+window.addEventListener('resize', () => {
+    const menuToggle = document.getElementById('menuToggle');
+    if (menuToggle) {
+        menuToggle.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+    }
+    
+    // Close mobile menu on resize to desktop
+    if (window.innerWidth > 768) {
+        const sidebar = document.querySelector('.admin-sidebar');
+        if (sidebar) {
+            sidebar.classList.remove('open');
+        }
+    }
+});
+
+/**
  * Setup sidebar navigation
  */
 function setupNavigation() {
@@ -65,6 +110,9 @@ function setupNavigation() {
             e.preventDefault();
             
             if (item.classList.contains('hidden')) return;
+            
+            // Close mobile menu when item is clicked
+            closeMobileMenu();
             
             // Update active state
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -159,7 +207,6 @@ async function loadUsers() {
             <tr>
                 <td><strong>${escapeHtml(user.username)}</strong></td>
                 <td>${escapeHtml(user.email || '-')}</td>
-                <td>${escapeHtml(user.full_name || '-')}</td>
                 <td><span class="role-badge ${user.role}">${authService.getRoleDisplayName(user.role)}</span></td>
                 <td><span class="status-badge ${user.is_active ? 'active' : 'inactive'}">${user.is_active ? 'Attivo' : 'Disattivo'}</span></td>
                 <td class="actions">
@@ -218,8 +265,10 @@ function showCreateUserModal() {
             </div>
         </form>
     `, `
-        <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
-        <button type="button" class="btn-primary" onclick="document.getElementById('createUserForm').requestSubmit()">Crea Utente</button>
+        <div style="text-align:center">
+            <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
+            <button type="button" class="btn-primary" onclick="document.getElementById('createUserForm').requestSubmit()">Crea Utente</button>
+        </div>
     `);
     
     document.getElementById('createUserForm').addEventListener('submit', async (e) => {
@@ -281,20 +330,19 @@ async function editUser(userId) {
                 </select>
             </div>
             <div class="form-group">
-                <label>
-                    <input type="checkbox" id="editIsActive" ${user.is_active ? 'checked' : ''}> 
-                    Utente Attivo
-                </label>
+                <label>Utente Attivo</label>
+                <input type="checkbox" id="editIsActive" ${user.is_active ? 'checked' : ''}> 
             </div>
             <div class="form-group">
                 <label for="editPassword">Nuova Password (lascia vuoto per non cambiare)</label>
                 <input type="password" id="editPassword" minlength="6">
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
-                <button type="submit" class="btn-primary">Salva</button>
-            </div>
         </form>
+    `, `
+        <div style="text-align:center">
+            <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
+            <button type="button" class="btn-primary" onclick="document.getElementById('editUserForm').requestSubmit()">Salva</button>
+        </div>
     `);
     
     document.getElementById('editUserForm').addEventListener('submit', async (e) => {
@@ -377,11 +425,12 @@ async function manageUserWards(userId) {
                     `).join('')}
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
-                <button type="submit" class="btn-primary">Salva</button>
-            </div>
         </form>
+    `, `
+        <div style="text-align:center">
+            <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
+            <button type="button" class="btn-primary" onclick="document.getElementById('userWardsForm').requestSubmit()">Salva</button>
+        </div>
     `);
     
     document.getElementById('userWardsForm').addEventListener('submit', async (e) => {
@@ -479,11 +528,12 @@ function showCreateAreaModal() {
                 <label for="newAreaName">Nome Area *</label>
                 <input type="text" id="newAreaName" required>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
-                <button type="submit" class="btn-primary">Crea Area</button>
-            </div>
         </form>
+    `, `
+        <div style="text-align:center">
+            <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
+            <button type="button" class="btn-primary" onclick="document.getElementById('createAreaForm').requestSubmit()">Crea Area</button>
+        </div>
     `);
     
     document.getElementById('createAreaForm').addEventListener('submit', async (e) => {
@@ -524,11 +574,12 @@ async function editArea(areaId) {
                 <label for="editAreaName">Nome Area *</label>
                 <input type="text" id="editAreaName" value="${escapeHtml(area.name)}" required>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
-                <button type="submit" class="btn-primary">Salva</button>
-            </div>
         </form>
+    `, `
+        <div style="text-align:center">
+            <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
+            <button type="button" class="btn-primary" onclick="document.getElementById('editAreaForm').requestSubmit()">Salva</button>
+        </div>
     `);
     
     document.getElementById('editAreaForm').addEventListener('submit', async (e) => {
@@ -638,11 +689,12 @@ function showCreateStakeModal() {
                     ${areasData.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('')}
                 </select>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
-                <button type="submit" class="btn-primary">Crea Palo</button>
-            </div>
         </form>
+    `, `
+        <div style="text-align:center">
+            <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
+            <button type="button" class="btn-primary" onclick="document.getElementById('createStakeForm').requestSubmit()">Crea Palo</button>
+        </div>
     `);
     
     document.getElementById('createStakeForm').addEventListener('submit', async (e) => {
@@ -690,11 +742,12 @@ async function editStake(stakeId) {
                     ${areasData.map(a => `<option value="${a.id}" ${a.id === stake.area_id ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('')}
                 </select>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
-                <button type="submit" class="btn-primary">Salva</button>
-            </div>
         </form>
+    `, `
+        <div style="text-align:center">
+            <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
+            <button type="button" class="btn-primary" onclick="document.getElementById('editStakeForm').requestSubmit()">Salva</button>
+        </div>
     `);
     
     document.getElementById('editStakeForm').addEventListener('submit', async (e) => {
@@ -804,11 +857,12 @@ function showCreateWardModal() {
                     ${stakesData.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
                 </select>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
-                <button type="submit" class="btn-primary">Crea Rione</button>
-            </div>
         </form>
+    `, `
+        <div style="text-align:center">
+            <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
+            <button type="button" class="btn-primary" onclick="document.getElementById('createWardForm').requestSubmit()">Crea Rione</button>
+        </div>
     `);
     
     document.getElementById('createWardForm').addEventListener('submit', async (e) => {
@@ -856,11 +910,12 @@ async function editWard(wardId) {
                     ${stakesData.map(s => `<option value="${s.id}" ${s.id === ward.stake_id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}
                 </select>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
-                <button type="submit" class="btn-primary">Salva</button>
-            </div>
         </form>
+    `, `
+        <div style="text-align:center">
+            <button type="button" class="btn-cancel" onclick="closeModal()">Annulla</button>
+            <button type="button" class="btn-primary" onclick="document.getElementById('editWardForm').requestSubmit()">Salva</button>
+        </div>
     `);
     
     document.getElementById('editWardForm').addEventListener('submit', async (e) => {

@@ -11,6 +11,7 @@
 <body>
     <!-- Top Navigation -->
     <nav class="admin-nav">
+        <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()" style="display:none;">☰</button>
         <div class="nav-brand">
             <a href="/">Selettore Inni</a>
             <span class="nav-divider">|</span>
@@ -84,28 +85,24 @@
                 </div>
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-icon">👥</div>
                         <div class="stat-info">
                             <span class="stat-value" id="stat-users">-</span>
                             <span class="stat-label">Utenti</span>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon">🌍</div>
                         <div class="stat-info">
                             <span class="stat-value" id="stat-areas">-</span>
                             <span class="stat-label">Aree</span>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon">🏠</div>
                         <div class="stat-info">
                             <span class="stat-value" id="stat-stakes">-</span>
                             <span class="stat-label">Pali</span>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon">⛪</div>
                         <div class="stat-info">
                             <span class="stat-value" id="stat-wards">-</span>
                             <span class="stat-label">Rioni</span>
@@ -122,21 +119,30 @@
                     
                     <div class="quick-actions">
                         <a href="#" class="quick-action-card" onclick="switchSection('users'); return false;">
-                            <div class="icon">👥</div>
                             <div class="text">
                                 <h4>Gestisci Utenti</h4>
                                 <p>Crea e modifica account utente</p>
                             </div>
                         </a>
+                        <a href="#" class="quick-action-card" onclick="switchSection('areas'); return false;">
+                            <div class="text">
+                                <h4>Gestisci Aree</h4>
+                                <p>Configura le aree disponibili</p>
+                            </div>
+                        </a>                          
+                        <a href="#" class="quick-action-card" onclick="switchSection('stakes'); return false;">
+                            <div class="text">
+                                <h4>Gestisci Pali</h4>
+                                <p>Configura i pali disponibili</p>
+                            </div>
+                        </a>                        
                         <a href="#" class="quick-action-card" onclick="switchSection('wards'); return false;">
-                            <div class="icon">⛪</div>
                             <div class="text">
                                 <h4>Gestisci Rioni</h4>
                                 <p>Configura i rioni disponibili</p>
                             </div>
                         </a>
                         <a href="/" class="quick-action-card">
-                            <div class="icon">🎵</div>
                             <div class="text">
                                 <h4>Selettore Inni</h4>
                                 <p>Torna all'applicazione principale</p>
@@ -150,12 +156,11 @@
             <section id="section-users" class="admin-section">
                 <div class="section-header">
                     <h1>Gestione Utenti</h1>
-                    <button class="btn-primary" onclick="showCreateUserModal()">
+                    <button class="btn-add" onclick="showCreateUserModal()" title="Nuovo Utente">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
-                        Nuovo Utente
                     </button>
                 </div>
                 <div class="data-table-container">
@@ -164,7 +169,6 @@
                             <tr>
                                 <th>Username</th>
                                 <th>Email</th>
-                                <th>Nome</th>
                                 <th>Ruolo</th>
                                 <th>Stato</th>
                                 <th>Azioni</th>
@@ -181,12 +185,11 @@
             <section id="section-areas" class="admin-section">
                 <div class="section-header">
                     <h1>Gestione Aree</h1>
-                    <button class="btn-primary" onclick="showCreateAreaModal()">
+                    <button class="btn-add" onclick="showCreateAreaModal()" title="Nuova Area">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
-                        Nuova Area
                     </button>
                 </div>
                 <div class="data-table-container">
@@ -210,12 +213,11 @@
             <section id="section-stakes" class="admin-section">
                 <div class="section-header">
                     <h1>Gestione Pali</h1>
-                    <button class="btn-primary" onclick="showCreateStakeModal()">
+                    <button class="btn-add" onclick="showCreateStakeModal()" title="Nuovo Palo">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
-                        Nuovo Palo
                     </button>
                 </div>
                 <div class="data-table-container">
@@ -240,12 +242,11 @@
             <section id="section-wards" class="admin-section">
                 <div class="section-header">
                     <h1>Gestione Rioni</h1>
-                    <button class="btn-primary" onclick="showCreateWardModal()">
+                    <button class="btn-add" onclick="showCreateWardModal()" title="Nuovo Rione">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
-                        Nuovo Rione
                     </button>
                 </div>
                 <div class="data-table-container">
