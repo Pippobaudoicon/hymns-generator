@@ -358,7 +358,7 @@ async function loadWardsList() {
  */
 async function loadWardHistory(wardId, wardName) {
     state.currentHistoryWard = wardId;
-    ui.updateHistoryPanelTitle(`📜 ${wardName}`, false);
+    ui.updateHistoryPanelTitle(`${wardName}`, false);
     ui.showLoading('historyPanelContent', 'Caricamento cronologia');
 
     try {
