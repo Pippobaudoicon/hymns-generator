@@ -10,10 +10,15 @@ This migration adds:
 """
 
 import logging
+import sys
 from datetime import datetime
+from pathlib import Path
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table, text
 from sqlalchemy.orm import Session
+
+# Add project root to path so imports work when run directly
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from database.models import Base, Ward
 
