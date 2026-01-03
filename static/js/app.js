@@ -379,7 +379,7 @@ async function loadWardHistory(wardId, wardName) {
  */
 function goBackToWardsList() {
     state.currentHistoryWard = null;
-    ui.updateHistoryPanelTitle('📜 Cronologia Inni', true);
+    ui.updateHistoryPanelTitle('Cronologia Inni', true);
     loadWardsList();
 }
 
@@ -535,7 +535,7 @@ async function deleteHistoricalSelection(button) {
         // Refresh the current view
         if (state.currentHistoryWard) {
             // We're in ward-specific view
-            loadWardHistory(state.currentHistoryWard);
+            loadWardHistory(wardId, wardName);
         } else {
             // We're in recent selections view
             loadRecentSelections();
