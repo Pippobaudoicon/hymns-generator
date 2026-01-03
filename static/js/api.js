@@ -20,7 +20,7 @@ function getAuthHeaders() {
 /**
  * Make authenticated fetch request
  */
-async function authenticatedFetch(url, options = {}) {
+export async function authenticatedFetch(url, options = {}) {
     const headers = {
         ...options.headers,
         ...getAuthHeaders()
@@ -140,6 +140,22 @@ export const api = {
         
         if (!response.ok) {
             throw new Error('Errore nel caricamento');
+        }
+        
+        return response.json();
+    },
+
+    /**
+     * Delete a ward selection from history
+     */
+    async deleteWardSelection(wardId, selectionDate) {
+        const response = await authenticatedFetch(`${API_BASE_URL}/ward_history/${encodeURIComponent(wardId)}?selection_date=${selectionDate}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Errore durante l\'eliminazione');
         }
         
         return response.json();

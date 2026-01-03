@@ -530,14 +530,7 @@ async function deleteHistoricalSelection(button) {
     
     try {
         const wardId = button.dataset.wardId ? parseInt(button.dataset.wardId, 10) : null;
-        const response = await fetch(`/api/v1/ward_history/${encodeURIComponent(wardId)}?selection_date=${selectionDate}`, {
-            method: 'DELETE'
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Errore durante l\'eliminazione');
-        }
+        await api.deleteWardSelection(wardId, selectionDate);
         
         // Refresh the current view
         if (state.currentHistoryWard) {
