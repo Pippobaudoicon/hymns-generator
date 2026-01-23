@@ -4,6 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Selettore Inni - Chiesa di Gesù Cristo dei Santi degli Ultimi Giorni</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/static/manifest.json">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#003f87">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- iOS Specific Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Selettore Inni">
+    <link rel="apple-touch-icon" href="/static/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/static/icons/icon-192x192.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/icon-72x72.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/icon-72x72.png">
+    
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="stylesheet" href="/static/css/auth.css">
 </head>
@@ -40,7 +61,15 @@
         </div>
     </div>
 
-    <div class="container">
+    <!-- Offline Indicator -->
+    <div id="offline-indicator" class="offline-indicator" style="display: none;">
+        ⚠️ Modalità Offline - Alcuni dati potrebbero non essere aggiornati
+    </div>
+    
+    <!-- Sync Notification -->
+    <div id="sync-notification" class="sync-notification" style="display: none;"></div>
+
+    <div class="container" id="main-container">
         <div class="header">
             <h1>Selettore Inni</h1>
             <p>Chiesa di Gesù Cristo dei Santi degli Ultimi Giorni</p>
@@ -159,6 +188,35 @@
         });
     </script>
 
+    <!-- PWA Scripts -->
+    <script src="/static/js/pwa.js"></script>
+    <script src="/static/js/offline-sync.js"></script>
+    
+    <!-- Offline Detection -->
+    <script>
+        // Show/hide offline indicator and adjust layout
+        function updateOnlineStatus() {
+            const indicator = document.getElementById('offline-indicator');
+            const container = document.getElementById('main-container');
+            
+            if (navigator.onLine) {
+                indicator.style.display = 'none';
+                if (container) {
+                    container.style.marginTop = '100px';
+                }
+            } else {
+                indicator.style.display = 'block';
+                if (container) {
+                    container.style.marginTop = '150px'; // Add space for offline banner
+                }
+            }
+        }
+        
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+    </script>
+    
     <!-- JavaScript Modules -->
     <script type="module" src="/static/js/app.js"></script>
 </body>

@@ -13,6 +13,7 @@ A professional-grade RESTful API for managing and retrieving Italian hymns for t
 - **Sunday Date Tracking**: Automatically tracks hymns for the upcoming Sunday
 - **Ward Management**: Track hymn usage per ward to ensure variety
 - **Special Occasions**: Support for Christmas, Easter, and other festivities
+- **Progressive Web App (PWA)**: Installable app with offline support
 - **JWT Authentication**: Secure login with role-based access control
 - **Admin Panel**: Web-based management for users, areas, stakes, and wards
 - **Role Hierarchy**: Superadmin → Area Manager → Stake Manager → Ward User
@@ -138,6 +139,26 @@ Returns a single hymn filtered by number, category, or tag.
 - `GET /api/v1/wards` - List all wards
 - `GET /api/v1/wards/{ward_name}/history` - Ward selection history
 
+### 📱 Progressive Web App (PWA)
+
+The application is configured as a Progressive Web App with:
+- **Offline Support**: Works without internet connection
+- **Installable**: Can be installed on mobile and desktop devices
+- **App-like Experience**: Runs in standalone mode
+- **Auto-updates**: Automatically detects and applies updates
+
+**Quick Setup:**
+```bash
+# Generate app icons
+pip install Pillow
+python scripts/generate_icons.py
+
+# Start the app
+python app.py
+```
+
+For detailed PWA setup instructions, see [PWA-SETUP.md](PWA-SETUP.md).
+
 ### 🔐 Authentication Endpoints
 
 #### Login
@@ -238,15 +259,21 @@ hymns-generator/
 │   ├── index.html         # Web interface
 │   ├── login.html         # Login page
 │   ├── admin.html         # Admin panel
+│   ├── manifest.json      # PWA manifest
+│   ├── sw.js              # Service worker
 │   ├── css/
 │   │   ├── styles.css     # Main styles
 │   │   ├── auth.css       # Authentication styles
 │   │   └── admin.css      # Admin panel styles
-│   └── js/
-│       ├── app.js         # Main application
-│       ├── api.js         # API module
-│       ├── ui.js          # UI module
-│       ├── auth.js        # Authentication service
+│   ├── js/
+│   │   ├── app.js         # Main application
+│   │   ├── api.js         # API module
+│   │   ├── ui.js          # UI module
+│   │   ├── auth.js        # Authentication service
+│   │   ├── pwa.js         # PWA manager
+│   │   └── admin.js       # Admin panel
+│   └── icons/             # PWA icons
+│       └── README.md      # Icon generation guide
 │       └── admin.js       # Admin panel logic
 ├── .github/               # GitHub configuration
 │   └── workflows/
