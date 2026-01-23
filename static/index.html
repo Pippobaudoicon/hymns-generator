@@ -139,6 +139,12 @@
     <div class="history-panel" id="historyPanel">
         <div class="history-panel-header">
             <h2 id="historyPanelTitle">Cronologia Inni</h2>
+            <button class="history-panel-close" onclick="closeHistoryPanel()" aria-label="Chiudi">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
         </div>
         <div class="history-tabs" id="historyTabs">
             <button class="history-tab active" data-tab="wards">
@@ -190,6 +196,7 @@
 
     <!-- PWA Scripts -->
     <script src="/static/js/pwa.js"></script>
+    <script src="/static/js/offline-storage.js"></script>
     <script src="/static/js/offline-sync.js"></script>
     
     <!-- Offline Detection -->

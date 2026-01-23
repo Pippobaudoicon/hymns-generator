@@ -1,7 +1,7 @@
 // Service Worker for Selettore Inni PWA
-const CACHE_NAME = 'selettore-inni-v1';
-const RUNTIME_CACHE = 'selettore-inni-runtime-v1';
-const HYMNS_CACHE = 'selettore-inni-hymns-v1';
+const CACHE_NAME = 'selettore-inni-v2';
+const RUNTIME_CACHE = 'selettore-inni-runtime-v2';
+const HYMNS_CACHE = 'selettore-inni-hymns-v2';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
@@ -18,6 +18,7 @@ const PRECACHE_ASSETS = [
   '/static/js/ui.js',
   '/static/js/admin.js',
   '/static/js/pwa.js',
+  '/static/js/offline-storage.js',
   '/static/js/offline-sync.js',
   '/static/manifest.json'
 ];

@@ -1,12 +1,23 @@
 /**
  * Offline Sync Manager
- * Pre-caches hymns data for offline availability
+ * Pre-caches hymns data for offline availability using IndexedDB
  */
 
 class OfflineSyncManager {
   constructor() {
     this.isSyncing = false;
     this.lastSyncTime = this.getLastSyncTime();
+    this.storage = null;
+  }
+
+  /**
+   * Initialize with offline storage
+   */
+  async initStorage() {
+    if (typeof offlineStorage !== 'undefined') {
+      this.storage = offlineStorage;
+      await this.storage.init();
+    }
   }
 
   /**
@@ -55,30 +66,52 @@ class OfflineSyncManager {
     console.log('[Offline Sync] Starting hymns data sync...');
 
     try {
-      // Endpoints to pre-cache
-      const endpoints = [
-        '/api/v1/categories',
-        '/api/v1/tags',
-        '/api/v1/stats',
-        '/api/v1/wards'
-      ];
+      // Initialize storage if not done
+      if (!this.storage) {
+        await this.initStorage();
+      }
 
-      // Fetch all endpoints to populate cache
-      const promises = endpoints.map(endpoint =>
-        fetch(endpoint)
-          .then(response => {
-            if (response.ok) {
-              console.log(`[Offline Sync] Cached: ${endpoint}`);
-              return response.json();
-            }
-            throw new Error(`Failed to fetch ${endpoint}`);
-          })
-          .catch(err => {
-            console.warn(`[Offline Sync] Failed to cache ${endpoint}:`, err);
-          })
-      );
+      // Fetch and store wards
+      try {
+        const wardsResponse = await fetch('/api/v1/wards');
+        if (wardsResponse.ok) {
+          const wards = await wardsResponse.json();
+          if (this.storage) {
+            await this.storage.storeWards(wards);
+          }
+          console.log('[Offline Sync] Cached wards');
+        }
+      } catch (err) {
+        console.warn('[Offline Sync] Failed to cache wards:', err);
+      }
 
-      await Promise.all(promises);
+      // Fetch and store categories
+      try {
+        const categoriesResponse = await fetch('/api/v1/categories');
+        if (categoriesResponse.ok) {
+          const categories = await categoriesResponse.json();
+          if (this.storage) {
+            await this.storage.storeMetadata('categories', categories);
+          }
+          console.log('[Offline Sync] Cached categories');
+        }
+      } catch (err) {
+        console.warn('[Offline Sync] Failed to cache categories:', err);
+      }
+
+      // Fetch and store tags
+      try {
+        const tagsResponse = await fetch('/api/v1/tags');
+        if (tagsResponse.ok) {
+          const tags = await tagsResponse.json();
+          if (this.storage) {
+            await this.storage.storeMetadata('tags', tags);
+          }
+          console.log('[Offline Sync] Cached tags');
+        }
+      } catch (err) {
+        console.warn('[Offline Sync] Failed to cache tags:', err);
+      }
 
       // Also pre-cache some common hymn requests
       await this.cacheCommonHymnRequests();
@@ -98,11 +131,11 @@ class OfflineSyncManager {
   }
 
   /**
-   * Cache common hymn selection requests
+   * Cache common hymn selection requests and store in IndexedDB
    */
   async cacheCommonHymnRequests() {
     try {
-      // Get a basic hymn selection to populate cache
+      // Get a basic hymn selection to populate cache and IndexedDB
       const basicRequests = [
         '/api/v1/get_hymns?prima_domenica=false&domenica_festiva=false',
         '/api/v1/get_hymns?prima_domenica=true&domenica_festiva=false'
@@ -112,7 +145,13 @@ class OfflineSyncManager {
         try {
           const response = await fetch(url);
           if (response.ok) {
-            await response.json();
+            const data = await response.json();
+            
+            // Store hymns in IndexedDB
+            if (this.storage && data.hymns) {
+              await this.storage.storeHymns(data.hymns);
+            }
+            
             console.log(`[Offline Sync] Cached hymn request: ${url}`);
           }
         } catch (err) {

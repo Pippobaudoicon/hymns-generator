@@ -43,18 +43,39 @@ export async function authenticatedFetch(url, options = {}) {
 
 export const api = {
     /**
-     * Fetch all wards
+     * Fetch all wards (with offline fallback)
      */
     async getWards() {
-        const response = await authenticatedFetch(`${API_BASE_URL}/wards`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch wards');
+        try {
+            const response = await authenticatedFetch(`${API_BASE_URL}/wards`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch wards');
+            }
+            const wards = await response.json();
+            
+            // Store in IndexedDB for offline use
+            if (typeof offlineStorage !== 'undefined') {
+                offlineStorage.storeWards(wards).catch(err =>
+                    console.warn('Failed to cache wards:', err)
+                );
+            }
+            
+            return wards;
+        } catch (error) {
+            // Try offline storage if network fails
+            if (!navigator.onLine && typeof offlineStorage !== 'undefined') {
+                console.log('[API] Offline: Loading wards from IndexedDB');
+                const cachedWards = await offlineStorage.getWards();
+                if (cachedWards && cachedWards.length > 0) {
+                    return cachedWards;
+                }
+            }
+            throw error;
         }
-        return response.json();
     },
 
     /**
-     * Get hymns with smart selection
+     * Get hymns with smart selection (with offline fallback)
      */
     async getHymns(wardId, primaDomenica, domenicaFestiva, tipoFestivita) {
         let url;
@@ -71,14 +92,57 @@ export const api = {
             url += `&tipo_festivita=${tipoFestivita}`;
         }
 
-        const response = await authenticatedFetch(url);
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Errore nel recupero degli inni');
+        try {
+            const response = await authenticatedFetch(url);
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Errore nel recupero degli inni');
+            }
+
+            const data = await response.json();
+            
+            // Store hymns in IndexedDB for offline use
+            if (typeof offlineStorage !== 'undefined' && data.hymns) {
+                offlineStorage.storeHymns(data.hymns).catch(err =>
+                    console.warn('Failed to cache hymns:', err)
+                );
+            }
+            
+            return data;
+        } catch (error) {
+            // Try offline storage if network fails
+            if (!navigator.onLine && typeof offlineStorage !== 'undefined') {
+                console.log('[API] Offline: Generating hymns from IndexedDB');
+                return this.getOfflineHymns(primaDomenica, domenicaFestiva, tipoFestivita);
+            }
+            throw error;
+        }
+    },
+
+    /**
+     * Generate hymns offline from cached data
+     */
+    async getOfflineHymns(primaDomenica, domenicaFestiva, tipoFestivita) {
+        if (typeof offlineStorage === 'undefined') {
+            throw new Error('Offline storage not available');
         }
 
-        return response.json();
+        const allHymns = await offlineStorage.getAllHymns();
+        
+        if (!allHymns || allHymns.length === 0) {
+            throw new Error('Nessun inno disponibile offline. Sincronizza i dati quando sei online.');
+        }
+
+        // Simple random selection from cached hymns
+        const shuffled = allHymns.sort(() => 0.5 - Math.random());
+        const selected = shuffled.slice(0, 3);
+
+        return {
+            hymns: selected,
+            offline: true,
+            message: 'Inni selezionati dalla cache offline'
+        };
     },
 
     /**
@@ -133,16 +197,51 @@ export const api = {
     },
 
     /**
-     * Get ward history
+     * Get ward history (with offline fallback)
      */
     async getWardHistory(wardId, limit = 20) {
-        const response = await authenticatedFetch(`${API_BASE_URL}/ward_history/${encodeURIComponent(wardId)}?limit=${limit}`);
-        
-        if (!response.ok) {
-            throw new Error('Errore nel caricamento');
+        try {
+            const response = await authenticatedFetch(`${API_BASE_URL}/ward_history/${encodeURIComponent(wardId)}?limit=${limit}`);
+            
+            if (!response.ok) {
+                throw new Error('Errore nel caricamento');
+            }
+            
+            const history = await response.json();
+            
+            // Store in IndexedDB for offline use
+            if (typeof offlineStorage !== 'undefined' && history.length > 0) {
+                for (const entry of history) {
+                    offlineStorage.storeHistory({
+                        ward_id: wardId,
+                        date: entry.selection_date,
+                        hymns: entry.hymns,
+                        prima_domenica: entry.prima_domenica,
+                        domenica_festiva: entry.domenica_festiva,
+                        tipo_festivita: entry.tipo_festivita
+                    }).catch(err => console.warn('Failed to cache history entry:', err));
+                }
+            }
+            
+            return history;
+        } catch (error) {
+            // Try offline storage if network fails
+            if (!navigator.onLine && typeof offlineStorage !== 'undefined') {
+                console.log('[API] Offline: Loading history from IndexedDB');
+                const cachedHistory = await offlineStorage.getWardHistory(wardId);
+                if (cachedHistory && cachedHistory.length > 0) {
+                    // Transform to match API format
+                    return cachedHistory.map(entry => ({
+                        selection_date: entry.date,
+                        hymns: entry.hymns,
+                        prima_domenica: entry.prima_domenica,
+                        domenica_festiva: entry.domenica_festiva,
+                        tipo_festivita: entry.tipo_festivita
+                    })).slice(0, limit);
+                }
+            }
+            throw error;
         }
-        
-        return response.json();
     },
 
     /**
