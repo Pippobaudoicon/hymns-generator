@@ -207,14 +207,20 @@ export const api = {
                 throw new Error('Errore nel caricamento');
             }
             
-            const history = await response.json();
+            const data = await response.json();
             
             // Store in IndexedDB for offline use
-            if (typeof offlineStorage !== 'undefined' && history.length > 0) {
-                for (const entry of history) {
+            if (typeof offlineStorage !== 'undefined' && data.history && data.history.length > 0) {
+                // Store ward metadata
+                offlineStorage.storeWardMetadata({
+                    id: wardId,
+                    name: data.ward_name
+                }).catch(err => console.warn('Failed to cache ward metadata:', err));
+                
+                for (const entry of data.history) {
                     offlineStorage.storeHistory({
                         ward_id: wardId,
-                        date: entry.selection_date,
+                        date: entry.date,
                         hymns: entry.hymns,
                         prima_domenica: entry.prima_domenica,
                         domenica_festiva: entry.domenica_festiva,
@@ -223,21 +229,37 @@ export const api = {
                 }
             }
             
-            return history;
+            return data;
         } catch (error) {
             // Try offline storage if network fails
             if (!navigator.onLine && typeof offlineStorage !== 'undefined') {
                 console.log('[API] Offline: Loading history from IndexedDB');
                 const cachedHistory = await offlineStorage.getWardHistory(wardId);
                 if (cachedHistory && cachedHistory.length > 0) {
+                    // Try to get ward name from cache
+                    let wardName = 'Rione';
+                    try {
+                        const wardMetadata = await offlineStorage.getWardMetadata(wardId);
+                        if (wardMetadata) {
+                            wardName = wardMetadata.name;
+                        }
+                    } catch (e) {
+                        console.warn('Could not retrieve cached ward name:', e);
+                    }
+                    
                     // Transform to match API format
-                    return cachedHistory.map(entry => ({
-                        selection_date: entry.date,
-                        hymns: entry.hymns,
-                        prima_domenica: entry.prima_domenica,
-                        domenica_festiva: entry.domenica_festiva,
-                        tipo_festivita: entry.tipo_festivita
-                    })).slice(0, limit);
+                    return {
+                        ward_id: wardId,
+                        ward_name: wardName,
+                        history: cachedHistory.map(entry => ({
+                            date: entry.date,
+                            hymns: entry.hymns,
+                            prima_domenica: entry.prima_domenica,
+                            domenica_festiva: entry.domenica_festiva,
+                            tipo_festivita: entry.tipo_festivita
+                        })),
+                        total_selections: cachedHistory.length
+                    };
                 }
             }
             throw error;

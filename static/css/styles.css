@@ -369,13 +369,12 @@ button:disabled {
     background: var(--gradient);
     color: white;
     padding: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    position: relative;
 }
 
 .modal-header h3 {
     margin: 0;
+    padding-right: 40px;
 }
 
 .modal-close {
@@ -384,8 +383,22 @@ button:disabled {
     color: white;
     font-size: 1.5em;
     cursor: pointer;
-    padding: 0;
+    padding: 4px;
     line-height: 1;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background 0.2s;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .modal-search {
@@ -514,15 +527,14 @@ button:disabled {
     background: var(--gradient);
     color: white;
     padding: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    position: relative;
     flex-shrink: 0;
 }
 
 .history-panel-header h2 {
     margin: 0;
     font-size: 1.4em;
+    padding-right: 40px;
 }
 
 .history-panel-close {
@@ -530,12 +542,17 @@ button:disabled {
     border: none;
     color: white;
     cursor: pointer;
-    padding: 8px;
+    padding: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: 4px;
     transition: background 0.2s;
+    width: 32px;
+    height: 32px;
+    position: absolute;
+    top: 16px;
+    right: 16px;
 }
 
 .history-panel-close:hover {
@@ -544,6 +561,8 @@ button:disabled {
 
 .history-panel-close svg {
     display: block;
+    width: 20px;
+    height: 20px;
 }
 
 .history-panel-content {

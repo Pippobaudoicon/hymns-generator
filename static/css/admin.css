@@ -103,6 +103,7 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
+    white-space: nowrap;
 }
 
 .btn-nav:hover {
@@ -593,12 +594,10 @@ body {
 }
 
 .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     padding: 20px 24px;
     border-bottom: 1px solid var(--admin-border);
     background: var(--admin-bg);
+    position: relative;
 }
 
 .modal-header h3 {
@@ -606,21 +605,26 @@ body {
     margin: 0;
     font-size: 1.125em;
     font-weight: 600;
+    padding-right: 40px;
 }
 
 .modal-close {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: none;
     border: none;
-    font-size: 1.5em;
+    font-size: 1.25em;
     cursor: pointer;
+    padding: 0;
     color: var(--admin-text-muted);
     border-radius: var(--admin-radius);
     transition: var(--admin-transition);
+    position: absolute;
+    top: 18px;
+    right: 20px;
 }
 
 .modal-close:hover {

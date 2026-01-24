@@ -325,6 +325,9 @@ function closeHistoryPanel() {
     state.currentHistoryWard = null;
 }
 
+// Expose closeHistoryPanel globally for onclick handler
+window.closeHistoryPanel = closeHistoryPanel;
+
 /**
  * Switch history tab
  */

@@ -159,6 +159,50 @@ class OfflineStorageManager {
   }
 
   /**
+   * Store ward metadata (name, etc)
+   */
+  async storeWardMetadata(wardData) {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['wards'], 'readwrite');
+      const store = transaction.objectStore('wards');
+      const request = store.put(wardData);
+
+      request.onsuccess = () => {
+        console.log('[Offline Storage] Stored ward metadata');
+        resolve(request.result);
+      };
+
+      request.onerror = () => {
+        console.error('[Offline Storage] Failed to store ward metadata:', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  /**
+   * Get ward metadata by ID
+   */
+  async getWardMetadata(wardId) {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['wards'], 'readonly');
+      const store = transaction.objectStore('wards');
+      const request = store.get(wardId);
+
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  /**
    * Get ward history
    */
   async getWardHistory(wardId) {

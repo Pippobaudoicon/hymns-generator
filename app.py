@@ -89,6 +89,12 @@ app.include_router(org_router, tags=["Organization"])
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Service Worker endpoint (must be at root to control entire site)
+@app.get("/sw.js", tags=["PWA"])
+def service_worker():
+    """Serve the service worker script from root."""
+    return FileResponse("static/sw.js", media_type="application/javascript")
+
 # Root endpoint
 @app.get("/", tags=["Root"])
 def read_root():

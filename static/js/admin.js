@@ -409,22 +409,96 @@ async function manageUserWards(userId) {
     const user = usersData.find(u => u.id === userId);
     if (!user) return;
     
-    // Load wards
+    // Load wards and stakes
     wardsData = await fetchData('/wards');
-    const userWardIds = user.ward_ids || [];
+    stakesData = await fetchData('/stakes');
     
-    showModal(`Rioni di ${user.username}`, `
-        <form id="userWardsForm">
-            <div class="form-group">
-                <label>Seleziona Rioni</label>
-                <div class="checkbox-list">
-                    ${wardsData.map(ward => `
+    // Ensure userWardIds are numbers for proper comparison
+    const userWardIds = (user.assigned_ward_ids || []).map(id => parseInt(id));
+    
+    // Group wards by stake
+    const wardsByStake = {};
+    const wardsWithoutStake = [];
+    
+    wardsData.forEach(ward => {
+        if (ward.stake_id) {
+            if (!wardsByStake[ward.stake_id]) {
+                wardsByStake[ward.stake_id] = [];
+            }
+            wardsByStake[ward.stake_id].push(ward);
+        } else {
+            wardsWithoutStake.push(ward);
+        }
+    });
+    
+    // Build HTML with stakes sections
+    let wardsHTML = '';
+    
+    // Add stakes with their wards
+    stakesData.forEach(stake => {
+        const stakeWards = wardsByStake[stake.id] || [];
+        if (stakeWards.length === 0) return;
+        
+        const allWardsInStakeSelected = stakeWards.every(w => userWardIds.includes(w.id));
+        
+        wardsHTML += `
+            <div class="stake-group" style="margin-bottom: 20px; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px;">
+                <div style="display: flex; align-items: center; margin-bottom: 8px; font-weight: 600; color: #003f87;">
+                    <input type="checkbox" id="stake_${stake.id}" 
+                        class="stake-checkbox" 
+                        data-stake-id="${stake.id}"
+                        ${allWardsInStakeSelected ? 'checked' : ''}
+                        style="margin-right: 8px;">
+                    <label for="stake_${stake.id}" style="margin: 0; cursor: pointer; font-size: 14px;">
+                        ${escapeHtml(stake.name)} (Seleziona tutti)
+                    </label>
+                </div>
+                <div class="stake-wards" style="margin-left: 24px;">
+                    ${stakeWards.map(ward => `
                         <div class="checkbox-item">
-                            <input type="checkbox" id="ward_${ward.id}" value="${ward.id}" 
+                            <input type="checkbox" 
+                                id="ward_${ward.id}" 
+                                value="${ward.id}" 
+                                class="ward-checkbox"
+                                data-stake-id="${stake.id}"
                                 ${userWardIds.includes(ward.id) ? 'checked' : ''}>
                             <label for="ward_${ward.id}">${escapeHtml(ward.name)}</label>
                         </div>
                     `).join('')}
+                </div>
+            </div>
+        `;
+    });
+    
+    // Add wards without stakes
+    if (wardsWithoutStake.length > 0) {
+        wardsHTML += `
+            <div class="stake-group" style="margin-bottom: 20px; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px;">
+                <div style="margin-bottom: 8px; font-weight: 600; color: #666;">
+                    Altri Rioni
+                </div>
+                <div style="margin-left: 24px;">
+                    ${wardsWithoutStake.map(ward => `
+                        <div class="checkbox-item">
+                            <input type="checkbox" 
+                                id="ward_${ward.id}" 
+                                value="${ward.id}" 
+                                class="ward-checkbox"
+                                ${userWardIds.includes(ward.id) ? 'checked' : ''}>
+                            <label for="ward_${ward.id}">${escapeHtml(ward.name)}</label>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    showModal(`Rioni di ${user.username}`, `
+        <form id="userWardsForm">
+            <div class="form-group">
+                <label>Seleziona Rioni (individualmente o per Palo)</label>
+                <div class="checkbox-list" style="max-height: 400px; overflow-y: auto;">
+                    ${wardsHTML}
                 </div>
             </div>
         </form>
@@ -434,6 +508,34 @@ async function manageUserWards(userId) {
             <button type="button" class="btn-primary" onclick="document.getElementById('userWardsForm').requestSubmit()">Salva</button>
         </div>
     `);
+    
+    // Add event listeners for stake checkboxes
+    document.querySelectorAll('.stake-checkbox').forEach(stakeCheckbox => {
+        stakeCheckbox.addEventListener('change', function() {
+            const stakeId = this.dataset.stakeId;
+            const isChecked = this.checked;
+            
+            // Check/uncheck all wards in this stake
+            document.querySelectorAll(`.ward-checkbox[data-stake-id="${stakeId}"]`).forEach(wardCheckbox => {
+                wardCheckbox.checked = isChecked;
+            });
+        });
+    });
+    
+    // Add event listeners for ward checkboxes to update stake checkbox
+    document.querySelectorAll('.ward-checkbox').forEach(wardCheckbox => {
+        wardCheckbox.addEventListener('change', function() {
+            const stakeId = this.dataset.stakeId;
+            if (stakeId) {
+                const stakeCheckbox = document.getElementById(`stake_${stakeId}`);
+                if (stakeCheckbox) {
+                    const allWardsInStake = document.querySelectorAll(`.ward-checkbox[data-stake-id="${stakeId}"]`);
+                    const allChecked = Array.from(allWardsInStake).every(cb => cb.checked);
+                    stakeCheckbox.checked = allChecked;
+                }
+            }
+        });
+    });
     
     document.getElementById('userWardsForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -485,6 +587,48 @@ function getRoleOptions(selectedRole = null) {
 
 // ==================== AREAS ====================
 
+async function viewAreaStakes(areaId, areaName) {
+    try {
+        const stakes = await fetchData(`/areas/${areaId}/stakes`);
+        
+        let stakesHTML = '';
+        if (stakes.length === 0) {
+            stakesHTML = '<p style="color: #666; text-align: center; padding: 20px;">Nessun palo trovato in quest\'area.</p>';
+        } else {
+            stakesHTML = `
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="data-table" style="margin: 0;">
+                        <thead>
+                            <tr>
+                                <th>Nome Palo</th>
+                                <th>Numero Rioni</th>
+                                <th>Data Creazione</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${stakes.map(stake => `
+                                <tr>
+                                    <td><strong>${escapeHtml(stake.name)}</strong></td>
+                                    <td>${stake.ward_count || 0}</td>
+                                    <td>${formatDate(stake.created_at)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        showModal(`Pali di ${areaName}`, stakesHTML, `
+            <div style="text-align:center">
+                <button type="button" class="btn-primary" onclick="closeModal()">Chiudi</button>
+            </div>
+        `);
+    } catch (error) {
+        showToast('Errore nel caricamento dei pali', 'error');
+    }
+}
+
 async function loadAreas() {
     const tbody = document.getElementById('areasTableBody');
     tbody.innerHTML = '<tr><td colspan="4" class="loading">Caricamento...</td></tr>';
@@ -497,27 +641,38 @@ async function loadAreas() {
             return;
         }
         
-        tbody.innerHTML = areasData.map(area => `
-            <tr>
-                <td><strong>${escapeHtml(area.name)}</strong></td>
-                <td>${area.stakes?.length || 0}</td>
-                <td>${formatDate(area.created_at)}</td>
-                <td class="actions">
-                    <button class="btn-icon" onclick="editArea(${area.id})" title="Modifica">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    </button>
-                    <button class="btn-icon delete" onclick="deleteArea(${area.id})" title="Elimina">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = areasData.map(area => {
+            const stakeCount = area.stake_count || 0;
+            return `
+                <tr>
+                    <td><strong>${escapeHtml(area.name)}</strong></td>
+                    <td>
+                        ${stakeCount > 0 ? `
+                            <a href="#" onclick="viewAreaStakes(${area.id}, '${escapeHtml(area.name).replace(/'/g, "\\'")}'); return false;" 
+                               style="color: #003f87; text-decoration: underline; cursor: pointer;" 
+                               title="Visualizza pali">
+                                ${stakeCount}
+                            </a>
+                        ` : stakeCount}
+                    </td>
+                    <td>${formatDate(area.created_at)}</td>
+                    <td class="actions">
+                        <button class="btn-icon" onclick="editArea(${area.id})" title="Modifica">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                        <button class="btn-icon delete" onclick="deleteArea(${area.id})" title="Elimina">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     } catch (error) {
         tbody.innerHTML = '<tr><td colspan="4" class="loading">Errore nel caricamento</td></tr>';
     }
@@ -649,11 +804,20 @@ async function loadStakes() {
         
         tbody.innerHTML = stakesData.map(stake => {
             const area = areasData.find(a => a.id === stake.area_id);
+            const wardCount = stake.ward_count || 0;
             return `
                 <tr>
                     <td><strong>${escapeHtml(stake.name)}</strong></td>
                     <td>${area ? escapeHtml(area.name) : '-'}</td>
-                    <td>${stake.wards?.length || 0}</td>
+                    <td>
+                        ${wardCount > 0 ? `
+                            <a href="#" onclick="viewStakeWards(${stake.id}, '${escapeHtml(stake.name).replace(/'/g, "\\'")}'); return false;" 
+                               style="color: #003f87; text-decoration: underline; cursor: pointer;" 
+                               title="Visualizza rioni">
+                                ${wardCount}
+                            </a>
+                        ` : wardCount}
+                    </td>
                     <td>${formatDate(stake.created_at)}</td>
                     <td class="actions">
                         <button class="btn-icon" onclick="editStake(${stake.id})" title="Modifica">
@@ -778,6 +942,46 @@ async function updateStake(stakeId) {
         }
     } catch (error) {
         showToast('Errore di rete', 'error');
+    }
+}
+
+async function viewStakeWards(stakeId, stakeName) {
+    try {
+        const wards = await fetchData(`/stakes/${stakeId}/wards`);
+        
+        let wardsHTML = '';
+        if (wards.length === 0) {
+            wardsHTML = '<p style="color: #666; text-align: center; padding: 20px;">Nessun rione trovato in questo palo.</p>';
+        } else {
+            wardsHTML = `
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="data-table" style="margin: 0;">
+                        <thead>
+                            <tr>
+                                <th>Nome Rione</th>
+                                <th>Data Creazione</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${wards.map(ward => `
+                                <tr>
+                                    <td><strong>${escapeHtml(ward.name)}</strong></td>
+                                    <td>${formatDate(ward.created_at)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        showModal(`Rioni di ${stakeName}`, wardsHTML, `
+            <div style="text-align:center">
+                <button type="button" class="btn-primary" onclick="closeModal()">Chiudi</button>
+            </div>
+        `);
+    } catch (error) {
+        showToast('Errore nel caricamento dei rioni', 'error');
     }
 }
 
