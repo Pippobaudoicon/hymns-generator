@@ -43,7 +43,7 @@ const authService = {
     logout() {
         localStorage.removeItem(this.TOKEN_KEY);
         localStorage.removeItem(this.USER_KEY);
-        window.location.href = '/static/login.html';
+        window.location.href = '/login';
     },
 
     /**
@@ -195,7 +195,7 @@ const authService = {
  */
 function requireAuth() {
     if (!authService.isAuthenticated()) {
-        window.location.href = '/static/login.html';
+        window.location.href = '/login';
         return false;
     }
     return true;

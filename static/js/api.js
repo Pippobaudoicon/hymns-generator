@@ -33,7 +33,7 @@ export async function authenticatedFetch(url, options = {}) {
         if (typeof authService !== 'undefined') {
             authService.logout();
         } else {
-            window.location.href = '/static/login.html';
+            window.location.href = '/login';
         }
         throw new Error('Session expired');
     }

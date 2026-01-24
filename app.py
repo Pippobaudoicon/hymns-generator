@@ -95,12 +95,12 @@ def service_worker():
     """Serve the service worker script from root."""
     return FileResponse("static/sw.js", media_type="application/javascript")
 
-# Root endpoint - redirect to dashboard
+# Root endpoint - redirect to login (login page handles redirect to dashboard if authenticated)
 @app.get("/", tags=["Root"])
 def read_root():
-    """Redirect to the dashboard."""
+    """Redirect to login page."""
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/static/dashboard.html")
+    return RedirectResponse(url="/login")
 
 # Dashboard page
 @app.get("/dashboard", tags=["Root"])

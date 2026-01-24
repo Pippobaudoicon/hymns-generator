@@ -14,7 +14,7 @@ const tools = [
         title: 'Selettore Inni',
         description: 'Genera selezioni di inni per le riunioni domenicali. Supporta festività, prima domenica del mese e cronologia.',
         icon: 'music', // Can be 'music', 'calendar', 'users', etc. or an emoji like '🎵'
-        url: '/static/hymns.html',
+        url: '/hymns',
         badge: null, // Can be 'new', 'beta', 'coming-soon'
         disabled: false,
         // Optional: roles that can access this tool (if not specified, all authenticated users can access)
