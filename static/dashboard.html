@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Chiesa di Gesù Cristo dei Santi degli Ultimi Giorni</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/static/manifest.json">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#003f87">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- iOS Specific Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Strumenti LDS">
+    <link rel="apple-touch-icon" href="/static/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/static/icons/icon-192x192.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/icon-72x72.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/icon-72x72.png">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/auth.css">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+    <!-- User Menu -->
+    <div class="user-menu" id="userMenu">
+        <button class="user-menu-btn" onclick="toggleUserMenu()">
+            <span class="user-avatar" id="userAvatar">?</span>
+            <span class="user-name" id="userName">Utente</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </button>
+        <div class="user-dropdown" id="userDropdown">
+            <div class="user-dropdown-header">
+                <div class="user-email" id="userEmail"></div>
+                <div class="user-role" id="userRole"></div>
+            </div>
+            <a href="/static/admin.html" class="user-dropdown-item" id="adminLink" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                Amministrazione
+            </a>
+            <a href="#" class="user-dropdown-item logout" onclick="logout()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Esci
+            </a>
+        </div>
+    </div>
+
+    <!-- Offline Indicator -->
+    <div id="offline-indicator" class="offline-indicator" style="display: none;">
+        ⚠️ Modalità Offline - Alcuni dati potrebbero non essere aggiornati
+    </div>
+
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>Strumenti</h1>
+            <p>Chiesa di Gesù Cristo dei Santi degli Ultimi Giorni</p>
+            <p class="dashboard-subtitle">Milano Est</p>
+        </div>
+
+        <div class="tools-grid" id="toolsGrid">
+            <!-- Tools will be rendered here by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Auth Script -->
+    <script src="/static/js/auth.js"></script>
+    <script>
+        // Check authentication
+        if (!authService.isAuthenticated()) {
+            window.location.href = '/static/login.html';
+        } else {
+            // Initialize user menu
+            const user = authService.getUser();
+            if (user) {
+                document.getElementById('userAvatar').textContent = authService.getUserInitials();
+                document.getElementById('userName').textContent = user.full_name || user.username;
+                document.getElementById('userEmail').textContent = user.email || '';
+                document.getElementById('userRole').textContent = authService.getRoleDisplayName(user.role);
+                
+                // Show admin link for managers and superadmins
+                if (authService.hasAnyRole(['superadmin', 'area_manager', 'stake_manager'])) {
+                    document.getElementById('adminLink').style.display = 'flex';
+                }
+            }
+        }
+        
+        // Toggle user dropdown
+        function toggleUserMenu() {
+            document.getElementById('userDropdown').classList.toggle('show');
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.user-menu')) {
+                document.getElementById('userDropdown').classList.remove('show');
+            }
+        });
+    </script>
+
+    <!-- PWA Scripts -->
+    <script src="/static/js/pwa.js"></script>
+    <script src="/static/js/offline-storage.js"></script>
+    
+    <!-- Offline Detection -->
+    <script>
+        function updateOnlineStatus() {
+            const indicator = document.getElementById('offline-indicator');
+            if (navigator.onLine) {
+                indicator.style.display = 'none';
+            } else {
+                indicator.style.display = 'block';
+            }
+        }
+        
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+    </script>
+    
+    <!-- Dashboard Module -->
+    <script type="module" src="/static/js/dashboard.js"></script>
+</body>
+</html>

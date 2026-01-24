@@ -95,11 +95,24 @@ def service_worker():
     """Serve the service worker script from root."""
     return FileResponse("static/sw.js", media_type="application/javascript")
 
-# Root endpoint
+# Root endpoint - redirect to dashboard
 @app.get("/", tags=["Root"])
 def read_root():
+    """Redirect to the dashboard."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/static/dashboard.html")
+
+# Dashboard page
+@app.get("/dashboard", tags=["Root"])
+def dashboard_page():
+    """Serve the tools dashboard."""
+    return FileResponse("static/dashboard.html")
+
+# Hymns selector page (individual tool)
+@app.get("/hymns", tags=["Root"])
+def hymns_page():
     """Serve the hymn selector web interface."""
-    return FileResponse("static/index.html")
+    return FileResponse("static/hymns.html")
 
 # Login page
 @app.get("/login", tags=["Root"])

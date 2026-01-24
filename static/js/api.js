@@ -2,7 +2,7 @@
  * API Module - Handles all API calls with authentication
  */
 
-const API_BASE_URL = 'api/v1';
+const API_BASE_URL = '/api/v1';
 
 /**
  * Get auth headers from authService

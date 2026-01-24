@@ -27,8 +27,18 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="stylesheet" href="/static/css/auth.css">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
 </head>
 <body>
+    <!-- Back to Dashboard Button -->
+    <a href="/static/dashboard.html" class="back-to-dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Dashboard</span>
+    </a>
+
     <!-- User Menu -->
     <div class="user-menu" id="userMenu">
         <button class="user-menu-btn" onclick="toggleUserMenu()">

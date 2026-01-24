@@ -1,22 +1,25 @@
-// Service Worker for Selettore Inni PWA
-const CACHE_NAME = 'selettore-inni-v2';
-const RUNTIME_CACHE = 'selettore-inni-runtime-v2';
-const HYMNS_CACHE = 'selettore-inni-hymns-v2';
+// Service Worker for Strumenti LDS PWA
+const CACHE_NAME = 'strumenti-lds-v5-1';
+const RUNTIME_CACHE = 'strumenti-lds-runtime-v5-1';
+const HYMNS_CACHE = 'strumenti-lds-hymns-v5-1';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
   '/',
-  '/static/index.html',
+  '/static/dashboard.html',
+  '/static/hymns.html',
   '/static/login.html',
   '/static/admin.html',
   '/static/css/styles.css',
   '/static/css/auth.css',
   '/static/css/admin.css',
+  '/static/css/dashboard.css',
   '/static/js/app.js',
   '/static/js/auth.js',
   '/static/js/api.js',
   '/static/js/ui.js',
   '/static/js/admin.js',
+  '/static/js/dashboard.js',
   '/static/js/pwa.js',
   '/static/js/offline-storage.js',
   '/static/js/offline-sync.js',

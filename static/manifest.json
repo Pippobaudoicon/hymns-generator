@@ -1,8 +1,8 @@
 {
-  "name": "Selettore Inni - Chiesa di Gesù Cristo",
-  "short_name": "Selettore Inni",
-  "description": "Applicazione per la selezione degli inni per la Chiesa di Gesù Cristo dei Santi degli Ultimi Giorni",
-  "start_url": "/",
+  "name": "Strumenti LDS - Chiesa di Gesù Cristo",
+  "short_name": "Strumenti LDS",
+  "description": "Applicazione con strumenti per la Chiesa di Gesù Cristo dei Santi degli Ultimi Giorni",
+  "start_url": "/static/dashboard.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#003f87",
