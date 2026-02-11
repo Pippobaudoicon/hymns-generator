@@ -114,6 +114,12 @@ def hymns_page():
     """Serve the hymn selector web interface."""
     return FileResponse("static/hymns.html")
 
+# Hymn player page (individual tool)
+@app.get("/hymn-player", tags=["Root"])
+def hymn_player_page():
+    """Serve the hymn player web interface."""
+    return FileResponse("static/hymn-player.html")
+
 # Login page
 @app.get("/login", tags=["Root"])
 def login_page():

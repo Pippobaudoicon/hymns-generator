@@ -197,6 +197,150 @@ export const api = {
     },
 
     /**
+     * Get all hymns with pagination and filtering
+     */
+    async getAllHymns(page = 1, pageSize = 50, search = null, category = null, tag = null) {
+        let url = `${API_BASE_URL}/all?page=${page}&page_size=${pageSize}`;
+        
+        if (search) {
+            url += `&search=${encodeURIComponent(search)}`;
+        }
+        if (category) {
+            url += `&category=${encodeURIComponent(category)}`;
+        }
+        if (tag) {
+            url += `&tag=${encodeURIComponent(tag)}`;
+        }
+        
+        try {
+            const response = await authenticatedFetch(url);
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Errore nel recupero degli inni');
+            }
+            
+            const data = await response.json();
+            
+            // Store hymns in IndexedDB for offline use
+            if (typeof offlineStorage !== 'undefined' && data.hymns) {
+                offlineStorage.storeHymns(data.hymns).catch(err =>
+                    console.warn('Failed to cache hymns:', err)
+                );
+            }
+            
+            return data;
+        } catch (error) {
+            // Try offline storage if network fails
+            if (!navigator.onLine && typeof offlineStorage !== 'undefined') {
+                console.log('[API] Offline: Loading hymns from IndexedDB');
+                const allHymns = await offlineStorage.getAllHymns();
+                
+                if (!allHymns || allHymns.length === 0) {
+                    throw new Error('Nessun inno disponibile offline');
+                }
+                
+                // Simple client-side filtering for offline mode
+                let filtered = allHymns;
+                
+                if (category) {
+                    filtered = filtered.filter(h =>
+                        h.category.toLowerCase() === category.toLowerCase()
+                    );
+                }
+                
+                if (tag) {
+                    filtered = filtered.filter(h =>
+                        h.tags && h.tags.some(t => t.toLowerCase() === tag.toLowerCase())
+                    );
+                }
+                
+                if (search) {
+                    const searchLower = search.toLowerCase();
+                    filtered = filtered.filter(h =>
+                        h.number.toString().includes(searchLower) ||
+                        h.title.toLowerCase().includes(searchLower) ||
+                        (h.composers && h.composers.some(c => c.toLowerCase().includes(searchLower))) ||
+                        (h.authors && h.authors.some(a => a.toLowerCase().includes(searchLower)))
+                    );
+                }
+                
+                // Client-side pagination
+                const total = filtered.length;
+                const totalPages = Math.ceil(total / pageSize);
+                const start = (page - 1) * pageSize;
+                const end = start + pageSize;
+                const pageHymns = filtered.slice(start, end);
+                
+                return {
+                    hymns: pageHymns,
+                    total,
+                    page,
+                    page_size: pageSize,
+                    total_pages: totalPages,
+                    offline: true
+                };
+            }
+            throw error;
+        }
+    },
+
+    /**
+     * Get all hymn categories
+     */
+    async getCategories() {
+        try {
+            const response = await authenticatedFetch(`${API_BASE_URL}/categories`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch categories');
+            }
+            
+            return response.json();
+        } catch (error) {
+            // Try to extract from cached hymns if offline
+            if (!navigator.onLine && typeof offlineStorage !== 'undefined') {
+                const allHymns = await offlineStorage.getAllHymns();
+                if (allHymns && allHymns.length > 0) {
+                    const categories = [...new Set(allHymns.map(h => h.category))];
+                    return categories.sort();
+                }
+            }
+            throw error;
+        }
+    },
+
+    /**
+     * Get all hymn tags
+     */
+    async getTags() {
+        try {
+            const response = await authenticatedFetch(`${API_BASE_URL}/tags`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch tags');
+            }
+            
+            return response.json();
+        } catch (error) {
+            // Try to extract from cached hymns if offline
+            if (!navigator.onLine && typeof offlineStorage !== 'undefined') {
+                const allHymns = await offlineStorage.getAllHymns();
+                if (allHymns && allHymns.length > 0) {
+                    const tags = new Set();
+                    allHymns.forEach(h => {
+                        if (h.tags) {
+                            h.tags.forEach(tag => tags.add(tag));
+                        }
+                    });
+                    return Array.from(tags).sort();
+                }
+            }
+            throw error;
+        }
+    },
+
+    /**
      * Get ward history (with offline fallback)
      */
     async getWardHistory(wardId, limit = 20) {

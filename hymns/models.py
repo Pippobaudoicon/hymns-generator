@@ -63,6 +63,28 @@ class HymnList(BaseModel):
         super().__init__(hymns=hymns, count=len(hymns), **data)
 
 
+class PaginatedHymnList(BaseModel):
+    """Represents a paginated list of hymns."""
+
+    hymns: List[Hymn] = Field(description="List of hymns")
+    total: int = Field(description="Total number of hymns matching filters")
+    page: int = Field(description="Current page number")
+    page_size: int = Field(description="Number of hymns per page")
+    total_pages: int = Field(description="Total number of pages")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "hymns": [],
+                "total": 100,
+                "page": 1,
+                "page_size": 50,
+                "total_pages": 2,
+            }
+        }
+    )
+
+
 class HymnFilter(BaseModel):
     """Filter criteria for hymn selection."""
 

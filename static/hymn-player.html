@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lettore Inni - Chiesa di Gesù Cristo dei Santi degli Ultimi Giorni</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/static/manifest.json">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#003f87">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- iOS Specific Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Lettore Inni">
+    <link rel="apple-touch-icon" href="/static/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/static/icons/icon-192x192.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/icon-72x72.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/icon-72x72.png">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/auth.css">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <link rel="stylesheet" href="/static/css/hymn-player.css">
+</head>
+<body>
+    <!-- Back to Dashboard Button -->
+    <a href="/dashboard" class="back-to-dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Dashboard</span>
+    </a>
+
+    <!-- User Menu Container -->
+    <div id="userMenuContainer"></div>
+
+    <!-- Offline Indicator -->
+    <div id="offline-indicator" class="offline-indicator" style="display: none;">
+        ⚠️ Modalità Offline - Alcuni dati potrebbero non essere aggiornati
+    </div>
+
+    <div class="hymn-player-container" id="main-container">
+        <div class="hymn-player-header">
+            <h1>Lettore Inni</h1>
+            <p>Chiesa di Gesù Cristo dei Santi degli Ultimi Giorni</p>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div id="searchFilterContainer" class="hymn-player-search-section"></div>
+
+        <!-- View Toggle -->
+        <div class="hymn-player-controls">
+            <div class="hymn-player-view-toggle">
+                <button class="view-toggle-btn active" data-view="grid" title="Vista griglia">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                </button>
+                <button class="view-toggle-btn" data-view="list" title="Vista lista">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="hymn-player-results-info">
+                <span id="resultsCount">Caricamento...</span>
+            </div>
+        </div>
+
+        <!-- Top Pagination -->
+        <div id="paginationTopContainer" class="hymn-player-pagination" style="display: none;">
+            <button id="prevPageTop" class="pagination-btn pagination-btn-nav">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <div id="pageNumbersTop" class="pagination-numbers"></div>
+            <button id="nextPageTop" class="pagination-btn pagination-btn-nav">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hymn-player-loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Caricamento inni...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hymn-player-empty" style="display: none;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <h3>Nessun inno trovato</h3>
+            <p>Prova a modificare i filtri di ricerca</p>
+        </div>
+
+        <!-- Hymns Grid/List -->
+        <div id="hymnsContainer" class="hymns-grid"></div>
+
+        <!-- Bottom Pagination -->
+        <div id="paginationBottomContainer" class="hymn-player-pagination" style="display: none;">
+            <button id="prevPageBottom" class="pagination-btn pagination-btn-nav">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <div id="pageNumbersBottom" class="pagination-numbers"></div>
+            <button id="nextPageBottom" class="pagination-btn pagination-btn-nav">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Audio Player (Sticky Bottom) -->
+    <div id="audioPlayerContainer"></div>
+
+    <!-- Auth Script -->
+    <script src="/static/js/auth.js"></script>
+    <script>
+        // Check authentication
+        if (!authService.isAuthenticated()) {
+            window.location.href = '/login';
+        }
+    </script>
+
+    <!-- PWA Scripts -->
+    <script src="/static/js/pwa.js"></script>
+    <script src="/static/js/offline-storage.js"></script>
+    
+    <!-- Offline Detection -->
+    <script>
+        function updateOnlineStatus() {
+            const indicator = document.getElementById('offline-indicator');
+            const container = document.getElementById('main-container');
+            
+            if (navigator.onLine) {
+                indicator.style.display = 'none';
+                if (container) {
+                    container.style.marginTop = '100px';
+                }
+            } else {
+                indicator.style.display = 'block';
+                if (container) {
+                    container.style.marginTop = '150px';
+                }
+            }
+        }
+        
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+    </script>
+    
+    <!-- Hymn Player Module -->
+    <script type="module" src="/static/js/hymn-player.js"></script>
+</body>
+</html>

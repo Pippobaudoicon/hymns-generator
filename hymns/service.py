@@ -334,6 +334,54 @@ class HymnService:
             tags.update(hymn.tags)
         return sorted(list(tags))
 
+    def get_all_hymns(
+        self,
+        search: Optional[str] = None,
+        category: Optional[str] = None,
+        tag: Optional[str] = None,
+    ) -> List[Hymn]:
+        """
+        Get all hymns with optional filtering.
+        
+        Args:
+            search: Search term for number, title, composer, or author
+            category: Filter by category
+            tag: Filter by tag
+            
+        Returns:
+            List of filtered hymns
+        """
+        filtered_hymns = self.hymns.copy()
+        
+        # Apply category filter
+        if category:
+            filtered_hymns = [
+                h for h in filtered_hymns
+                if h.category.lower() == category.lower()
+            ]
+        
+        # Apply tag filter
+        if tag:
+            filtered_hymns = [
+                h for h in filtered_hymns
+                if tag.lower() in [t.lower() for t in h.tags]
+            ]
+        
+        # Apply search filter
+        if search:
+            search_lower = search.lower()
+            filtered_hymns = [
+                h for h in filtered_hymns
+                if (
+                    search_lower in str(h.number)
+                    or search_lower in h.title.lower()
+                    or any(search_lower in composer.lower() for composer in h.composers)
+                    or any(search_lower in author.lower() for author in h.authors)
+                )
+            ]
+        
+        return filtered_hymns
+
     def get_stats(self) -> dict:
         """Get statistics about the hymn collection."""
         return {

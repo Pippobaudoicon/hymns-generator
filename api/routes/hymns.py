@@ -1,6 +1,7 @@
 """Hymn-related endpoints."""
 
 import logging
+import math
 from datetime import datetime
 from typing import Optional
 
@@ -15,7 +16,7 @@ from database.database import get_database_session
 from database.history_service import HymnHistoryService
 from database.models import Ward
 from hymns.exceptions import HymnAPIException
-from hymns.models import FestivityType, Hymn, HymnFilter, HymnList
+from hymns.models import FestivityType, Hymn, HymnFilter, HymnList, PaginatedHymnList
 from hymns.service import HymnService
 from utils.date_utils import get_next_sunday
 
@@ -74,6 +75,100 @@ async def verify_ward_access_for_hymns(
             )
 
     return ward
+
+
+@router.get("/all", response_model=PaginatedHymnList, summary="Get all hymns with pagination")
+async def get_all_hymns(
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(50, ge=1, le=200, description="Number of hymns per page"),
+    search: Optional[str] = Query(None, description="Search by number, title, composer, or author"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    tag: Optional[str] = Query(None, description="Filter by tag"),
+    current_user: User = Depends(get_current_active_user),
+    service: HymnService = Depends(get_hymn_service),
+) -> PaginatedHymnList:
+    """
+    Get all hymns with pagination and optional filtering.
+    
+    - **page**: Page number (starts at 1)
+    - **page_size**: Number of hymns per page (max 200)
+    - **search**: Search term for number, title, composer, or author
+    - **category**: Filter by specific category
+    - **tag**: Filter by specific tag
+    
+    Returns paginated list with total count and page information.
+    """
+    try:
+        # Get filtered hymns
+        filtered_hymns = service.get_all_hymns(
+            search=search,
+            category=category,
+            tag=tag
+        )
+        
+        # Calculate pagination
+        total = len(filtered_hymns)
+        total_pages = math.ceil(total / page_size) if total > 0 else 1
+        
+        # Validate page number
+        if page > total_pages and total > 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Page {page} does not exist. Total pages: {total_pages}"
+            )
+        
+        # Get hymns for current page
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        page_hymns = filtered_hymns[start_idx:end_idx]
+        
+        return PaginatedHymnList(
+            hymns=page_hymns,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages
+        )
+        
+    except HymnAPIException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in get_all_hymns: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/categories", response_model=list[str], summary="Get all hymn categories")
+async def get_categories(
+    current_user: User = Depends(get_current_active_user),
+    service: HymnService = Depends(get_hymn_service),
+) -> list[str]:
+    """
+    Get all available hymn categories.
+    
+    Returns a sorted list of all unique categories in the hymn collection.
+    """
+    try:
+        return service.get_categories()
+    except Exception as e:
+        logger.error(f"Unexpected error in get_categories: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/tags", response_model=list[str], summary="Get all hymn tags")
+async def get_tags(
+    current_user: User = Depends(get_current_active_user),
+    service: HymnService = Depends(get_hymn_service),
+) -> list[str]:
+    """
+    Get all available hymn tags.
+    
+    Returns a sorted list of all unique tags in the hymn collection.
+    """
+    try:
+        return service.get_tags()
+    except Exception as e:
+        logger.error(f"Unexpected error in get_tags: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/get_hymns", response_model=HymnList, summary="Get hymns for service")

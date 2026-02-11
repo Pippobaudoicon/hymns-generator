@@ -13,12 +13,19 @@ const tools = [
         id: 'hymns-generator',
         title: 'Selettore Inni',
         description: 'Genera selezioni di inni per le riunioni domenicali. Supporta festività, prima domenica del mese e cronologia.',
-        icon: 'music', // Can be 'music', 'calendar', 'users', etc. or an emoji like '🎵'
+        icon: 'music',
         url: '/hymns',
-        badge: null, // Can be 'new', 'beta', 'coming-soon'
+        badge: null,
         disabled: false,
-        // Optional: roles that can access this tool (if not specified, all authenticated users can access)
-        // roles: ['superadmin', 'area_manager', 'stake_manager', 'ward_user']
+    },
+    {
+        id: 'hymn-player',
+        title: 'Lettore Inni',
+        description: 'Sfoglia e ascolta tutti gli inni con accompagnamento audio. Cerca per numero, titolo, categoria o compositore.',
+        icon: 'music',
+        url: '/hymn-player',
+        badge: 'new',
+        disabled: false,
     },
     // Example of future tools (commented out):
     // {

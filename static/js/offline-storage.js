@@ -74,8 +74,26 @@ class OfflineStorageManager {
 
       let stored = 0;
       hymns.forEach(hymn => {
-        const request = store.put(hymn);
-        request.onsuccess = () => stored++;
+        // Normalize hymn data - use songNumber if number is not present
+        const hymnNumber = hymn.number || hymn.songNumber;
+        
+        // Ensure hymn has a number field (required for keyPath)
+        if (hymn && hymnNumber) {
+          // Create normalized hymn object with 'number' field for IndexedDB
+          const normalizedHymn = {
+            ...hymn,
+            number: hymnNumber,
+            category: hymn.category || hymn.bookSectionTitle
+          };
+          
+          const request = store.put(normalizedHymn);
+          request.onsuccess = () => stored++;
+          request.onerror = (e) => {
+            console.warn(`[Offline Storage] Failed to store hymn ${hymnNumber}:`, e.target.error);
+          };
+        } else {
+          console.warn('[Offline Storage] Skipping hymn without number:', hymn);
+        }
       });
 
       transaction.oncomplete = () => {

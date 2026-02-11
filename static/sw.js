@@ -1,7 +1,7 @@
 // Service Worker for Strumenti LDS PWA
-const CACHE_NAME = 'strumenti-lds-v5-5';
-const RUNTIME_CACHE = 'strumenti-lds-runtime-v5-5';
-const HYMNS_CACHE = 'strumenti-lds-hymns-v5-5';
+const CACHE_NAME = 'strumenti-lds-v5-7';
+const RUNTIME_CACHE = 'strumenti-lds-runtime-v5-7';
+const HYMNS_CACHE = 'strumenti-lds-hymns-v5-7';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
