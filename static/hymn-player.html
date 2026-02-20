@@ -59,7 +59,8 @@
 
         <!-- View Toggle -->
         <div class="hymn-player-controls">
-            <div class="hymn-player-view-toggle">
+            <div class="hymn-player-left-controls">
+                <div class="hymn-player-view-toggle">
                 <button class="view-toggle-btn active" data-view="grid" title="Vista griglia">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="3" width="7" height="7"></rect>
@@ -79,6 +80,36 @@
                     </svg>
                 </button>
             </div>
+                <button id="randomPlayBtn" class="hymn-player-random-btn" title="Riproduci un inno casuale">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 3 21 3 21 8"></polyline>
+                        <line x1="4" y1="20" x2="21" y2="3"></line>
+                        <polyline points="21 16 21 21 16 21"></polyline>
+                        <line x1="15" y1="15" x2="21" y2="21"></line>
+                        <line x1="4" y1="4" x2="9" y2="9"></line>
+                    </svg>
+                    <span>Casuale</span>
+                </button>
+                <button id="pageShuffleBtn" class="hymn-player-page-shuffle-btn" title="Casuale (pagina corrente)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 3 21 3 21 8"></polyline>
+                        <line x1="4" y1="20" x2="21" y2="3"></line>
+                        <polyline points="21 16 21 21 16 21"></polyline>
+                        <line x1="15" y1="15" x2="21" y2="21"></line>
+                        <line x1="4" y1="4" x2="9" y2="9"></line>
+                    </svg>
+                    <span>Pagina</span>
+                </button>
+            </div>
+            <div class="hymn-player-page-size">
+                <label for="pageSizeSelect">Per pagina:</label>
+                <select id="pageSizeSelect">
+                    <option value="25">25</option>
+                    <option value="50" selected>50</option>
+                    <option value="100">100</option>
+                    <option value="1000">Tutti</option>
+                </select>
+            </div>
             <div class="hymn-player-results-info">
                 <span id="resultsCount">Caricamento...</span>
             </div>
@@ -86,15 +117,27 @@
 
         <!-- Top Pagination -->
         <div id="paginationTopContainer" class="hymn-player-pagination" style="display: none;">
-            <button id="prevPageTop" class="pagination-btn pagination-btn-nav">
+            <button id="firstPageTop" class="pagination-btn pagination-btn-nav" title="Prima pagina">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <line x1="6" y1="6" x2="6" y2="18"></line>
+                    <polyline points="13 18 8 12 13 6"></polyline>
+                </svg>
+            </button>
+            <button id="prevPageTop" class="pagination-btn pagination-btn-nav" title="Pagina precedente">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="15 18 9 12 15 6"></polyline>
                 </svg>
             </button>
             <div id="pageNumbersTop" class="pagination-numbers"></div>
-            <button id="nextPageTop" class="pagination-btn pagination-btn-nav">
+            <button id="nextPageTop" class="pagination-btn pagination-btn-nav" title="Pagina successiva">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+            <button id="lastPageTop" class="pagination-btn pagination-btn-nav" title="Ultima pagina">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="11 18 16 12 11 6"></polyline>
+                    <line x1="18" y1="6" x2="18" y2="18"></line>
                 </svg>
             </button>
         </div>
@@ -120,15 +163,27 @@
 
         <!-- Bottom Pagination -->
         <div id="paginationBottomContainer" class="hymn-player-pagination" style="display: none;">
-            <button id="prevPageBottom" class="pagination-btn pagination-btn-nav">
+            <button id="firstPageBottom" class="pagination-btn pagination-btn-nav" title="Prima pagina">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <line x1="6" y1="6" x2="6" y2="18"></line>
+                    <polyline points="13 18 8 12 13 6"></polyline>
+                </svg>
+            </button>
+            <button id="prevPageBottom" class="pagination-btn pagination-btn-nav" title="Pagina precedente">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="15 18 9 12 15 6"></polyline>
                 </svg>
             </button>
             <div id="pageNumbersBottom" class="pagination-numbers"></div>
-            <button id="nextPageBottom" class="pagination-btn pagination-btn-nav">
+            <button id="nextPageBottom" class="pagination-btn pagination-btn-nav" title="Pagina successiva">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+            <button id="lastPageBottom" class="pagination-btn pagination-btn-nav" title="Ultima pagina">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="11 18 16 12 11 6"></polyline>
+                    <line x1="18" y1="6" x2="18" y2="18"></line>
                 </svg>
             </button>
         </div>

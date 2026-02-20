@@ -676,7 +676,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/get_hymn?number=9999",
+							"raw": "{{base_url}}/get_hymn?number=1000",
 							"host": [
 								"{{base_url}}"
 							],
@@ -686,7 +686,7 @@
 							"query": [
 								{
 									"key": "number",
-									"value": "9999"
+									"value": "1000"
 								}
 							]
 						}

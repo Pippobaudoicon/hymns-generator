@@ -150,8 +150,15 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
     margin-bottom: 20px;
     padding: 0 4px;
+}
+
+.hymn-player-left-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .hymn-player-view-toggle {
@@ -159,21 +166,128 @@
     gap: 8px;
 }
 
-.view-toggle-btn {
-    padding: 10px;
-    background: white;
-    border: 2px solid #e0e0e0;
+.hymn-player-random-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 16px;
+    background: #7422e6;
+    color: white;
+    border: none;
     border-radius: 8px;
+    font-size: 0.88em;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+    height: 32px;
+}
+
+.hymn-player-random-btn:hover {
+    background: #d35400;
+    transform: scale(1.04);
+}
+
+.hymn-player-random-btn.active {
+    background: #d35400;
+    box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.45);
+}
+
+
+.hymn-player-random-btn svg {
+    flex-shrink: 0;
+}
+
+.hymn-player-page-shuffle-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 16px;
+    background: #16a085;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.88em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+    height: 32px;
+}
+
+.hymn-player-page-shuffle-btn:hover {
+    background: #1a7a62;
+    transform: scale(1.04);
+}
+
+.hymn-player-page-shuffle-btn.active {
+    background: #1a7a62;
+    box-shadow: 0 0 0 3px rgba(22, 160, 133, 0.45);
+}
+
+.hymn-player-page-shuffle-btn svg {
+    flex-shrink: 0;
+}
+
+/* Page size selector */
+.hymn-player-page-size {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 6px;
+}
+
+.hymn-player-page-size label {
+    font-size: 0.9em;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255, 255, 255, 0.8);
+    white-space: nowrap;
+}
+
+.hymn-player-page-size select {
+    padding: 5px 8px;
+    border: 1px solid #dde0e5;
+    border-radius: 6px;
+    font-size: 0.9em;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    color: #444;
+    height: 28px;
+}
+
+.hymn-player-page-size select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.view-toggle-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: white;
+    border: 1px solid #dde0e5;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #777;
+}
+
+.view-toggle-btn svg {
+    width: 16px;
+    height: 16px;
 }
 
 .view-toggle-btn:hover {
     border-color: var(--primary-color);
-    background: #f8f9fa;
+    background: #f4f6fa;
+    color: var(--primary-color);
 }
 
 .view-toggle-btn.active {
@@ -187,8 +301,8 @@
 }
 
 .hymn-player-results-info {
-    font-size: 0.95em;
-    color: #666;
+    font-size: 0.82em;
+    color: rgba(255, 255, 255, 0.8);
     font-weight: 500;
 }
 
@@ -491,82 +605,153 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 12px;
-    padding: 20px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    margin-bottom: 24px;
+    gap: 3px;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 10px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+    margin-bottom: 20px;
+    flex-wrap: wrap;
 }
 
+/* Page number buttons */
 .pagination-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 40px;
-    height: 40px;
-    padding: 8px;
-    background: white;
-    color: var(--primary-color);
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 0.95em;
-    font-weight: 600;
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    padding: 0;
+    background: transparent;
+    color: #555;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 0.85em;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1;
 }
 
 .pagination-btn:hover:not(:disabled):not(.active) {
-    border-color: var(--primary-color);
-    background: #f8f9fa;
-    transform: translateY(-2px);
+    background: #eef0f4;
+    color: #222;
 }
 
 .pagination-btn:disabled {
-    opacity: 0.4;
+    opacity: 0.25;
     cursor: not-allowed;
 }
 
 .pagination-btn.active {
     background: var(--primary-color);
     color: white;
-    border-color: var(--primary-color);
+    font-weight: 700;
 }
 
+/* Navigation buttons (first / prev / next / last) */
 .pagination-btn-nav {
-    min-width: 32px !important;
-    height: 32px !important;
-    padding: 4px !important;
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-    font-size: 0.85em;
+    width: 28px !important;
+    min-width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    color: #888 !important;
+    border: none !important;
+    border-radius: 6px !important;
+    font-size: inherit;
 }
 
 .pagination-btn-nav:hover:not(:disabled) {
-    background: var(--secondary-color);
-    border-color: var(--secondary-color);
+    background: #eef0f4 !important;
+    color: var(--primary-color) !important;
+    transform: none;
+}
+
+.pagination-btn-nav:disabled {
+    opacity: 0.2 !important;
+    cursor: not-allowed;
 }
 
 .pagination-btn-nav svg {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
+    pointer-events: none;
 }
 
 .pagination-btn svg {
     stroke: currentColor;
 }
 
+/* Visual separator between nav groups */
 .pagination-numbers {
     display: flex;
-    gap: 8px;
+    gap: 2px;
     align-items: center;
+    margin: 0 6px;
+    padding: 0 6px;
+    border-left: 1px solid #e8eaed;
+    border-right: 1px solid #e8eaed;
 }
 
 .pagination-ellipsis {
-    color: #999;
+    font-size: 0.8em;
+    color: #aaa;
+    padding: 0 2px;
+    letter-spacing: 0.05em;
+    line-height: 30px;
+}
+
+/* Jump-to-page */
+.pagination-jump {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 6px;
+    padding-left: 8px;
+    border-left: 1px solid #e8eaed;
+}
+
+.pagination-jump-input {
+    width: 44px;
+    height: 28px;
+    padding: 0 6px;
+    border: 1px solid #dde0e5;
+    border-radius: 6px;
+    font-size: 0.82em;
+    text-align: center;
+    color: #444;
+    background: #f8f9fb;
+    transition: border-color 0.15s, background 0.15s;
+    -moz-appearance: textfield;
+}
+
+.pagination-jump-input::-webkit-outer-spin-button,
+.pagination-jump-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.pagination-jump-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background: white;
+}
+
+.pagination-jump-input::placeholder {
+    color: #bbb;
+    font-size: 0.9em;
+}
+
+/* Mobile page indicator (hidden on desktop) */
+.pagination-mobile-info {
+    display: none;
+    font-size: 0.82em;
     font-weight: 600;
-    padding: 0 4px;
+    color: #666;
+    white-space: nowrap;
+    margin: 0 4px;
 }
 
 /* Audio Player (Sticky Bottom) */
@@ -905,34 +1090,38 @@
         margin-top: 80px;
         margin-bottom: 160px;
     }
-    
+
     .hymn-player-header h1 {
         font-size: 2em;
     }
-    
+
     .search-filter {
         flex-direction: column;
     }
-    
+
     .search-filter-search,
     .search-filter-group {
         width: 100%;
     }
-    
+
     .hymns-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .hymn-player-controls {
         flex-direction: column;
         align-items: stretch;
         gap: 12px;
     }
-    
+
     .hymn-player-view-toggle {
         justify-content: center;
     }
-    
+
+    .hymn-player-page-size {
+        justify-content: center;
+    }
+
     .hymn-player-results-info {
         text-align: center;
     }
@@ -953,6 +1142,34 @@
     
     .audio-player-progress {
         order: 3;
+    }
+}
+
+/* Compact pagination on small screens */
+@media (max-width: 600px) {
+    .hymn-player-pagination {
+        gap: 4px;
+        padding: 8px 10px;
+    }
+
+    /* Hide numbered page buttons and jump input — show only nav + mobile info */
+    .pagination-numbers {
+        display: none;
+    }
+
+    .pagination-jump {
+        display: none;
+    }
+
+    .pagination-mobile-info {
+        display: inline-flex;
+        align-items: center;
+        margin: 0 6px;
+    }
+
+    /* Hide the page-size label on small screens to save space */
+    .hymn-player-page-size label {
+        display: none;
     }
 }
 

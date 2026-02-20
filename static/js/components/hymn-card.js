@@ -169,32 +169,16 @@ export class HymnCard {
             footer.appendChild(selectBtn);
         }
 
-        // Info button (if enabled)
-        if (showInfo) {
-            const infoBtn = document.createElement('button');
-            infoBtn.className = 'hymn-card-btn hymn-card-btn-info';
-            infoBtn.title = 'Dettagli';
-            infoBtn.innerHTML = `
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-            `;
-            if (onInfo) {
-                infoBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    onInfo(hymn);
-                });
-            }
-            footer.appendChild(infoBtn);
-        }
-
         // Assemble card
         card.appendChild(header);
         card.appendChild(body);
         if (footer.children.length > 0) {
             card.appendChild(footer);
+        }
+
+        // Open info on card click
+        if (onInfo) {
+            card.addEventListener('click', () => onInfo(hymn));
         }
 
         return card;
@@ -284,28 +268,14 @@ export class HymnCard {
             actions.appendChild(selectBtn);
         }
 
-        // Info button (if enabled)
-        if (showInfo && onInfo) {
-            const infoBtn = document.createElement('button');
-            infoBtn.className = 'hymn-list-item-btn';
-            infoBtn.title = 'Dettagli';
-            infoBtn.innerHTML = `
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-            `;
-            infoBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                onInfo(hymn);
-            });
-            actions.appendChild(infoBtn);
-        }
-
         item.appendChild(content);
         if (actions.children.length > 0) {
             item.appendChild(actions);
+        }
+
+        // Open info on item click
+        if (onInfo) {
+            item.addEventListener('click', () => onInfo(hymn));
         }
 
         return item;

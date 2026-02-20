@@ -11,7 +11,8 @@ export class AudioPlayer {
         this.playlist = [];
         this.currentIndex = -1;
         this.isPlaying = false;
-        
+        this.shuffleMode = false;
+
         // Bind methods
         this.play = this.play.bind(this);
         this.pause = this.pause.bind(this);
@@ -202,9 +203,11 @@ export class AudioPlayer {
         this.currentHymn = hymn;
         this.audio.src = hymn.audio_url;
         
-        // Update playlist if provided
-        if (playlist) {
+        // Update playlist if provided; if null, only update the index (preserves shuffle playlist)
+        if (playlist !== null) {
             this.playlist = playlist;
+            this.currentIndex = index;
+        } else if (index !== -1) {
             this.currentIndex = index;
         }
         
@@ -258,10 +261,29 @@ export class AudioPlayer {
     }
 
     next() {
+        if (this.shuffleMode) {
+            this.nextRandom();
+            return;
+        }
         if (this.playlist.length > 0 && this.currentIndex < this.playlist.length - 1) {
             this.loadHymn(this.playlist[this.currentIndex + 1], this.playlist, this.currentIndex + 1);
             this.play();
         }
+    }
+
+    nextRandom() {
+        const playable = this.playlist
+            .map((h, i) => ({ hymn: h, index: i }))
+            .filter(({ hymn, index }) => hymn.audio_url && index !== this.currentIndex);
+        if (playable.length === 0) return;
+        const { hymn, index } = playable[Math.floor(Math.random() * playable.length)];
+        this.loadHymn(hymn, this.playlist, index);
+        this.play();
+    }
+
+    setShuffleMode(enabled) {
+        this.shuffleMode = enabled;
+        this.updateNavigationButtons();
     }
 
     previous() {
@@ -302,7 +324,10 @@ export class AudioPlayer {
     updateNavigationButtons() {
         if (this.playlist.length > 0) {
             this.elements.prevBtn.disabled = this.currentIndex <= 0;
-            this.elements.nextBtn.disabled = this.currentIndex >= this.playlist.length - 1;
+            const hasNext = this.shuffleMode
+                ? this.playlist.some((h, i) => h.audio_url && i !== this.currentIndex)
+                : this.currentIndex < this.playlist.length - 1;
+            this.elements.nextBtn.disabled = !hasNext;
         } else {
             this.elements.prevBtn.disabled = true;
             this.elements.nextBtn.disabled = true;
@@ -322,7 +347,10 @@ export class AudioPlayer {
     }
 
     onEnded() {
-        // Auto-play next if available
+        if (this.shuffleMode) {
+            this.nextRandom();
+            return;
+        }
         if (this.playlist.length > 0 && this.currentIndex < this.playlist.length - 1) {
             this.next();
         } else {
