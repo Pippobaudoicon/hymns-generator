@@ -38,6 +38,7 @@ Response with answer + cited sources
 - Serverless: no always-on pod, billed per query (well within free tier)
 - Pure API — **zero disk on VPS**
 - One namespace per source: `scriptures`, `conference`, `handbook`, `liahona`
+- Index name: `lds-rag`, similarity metric: `cosine` (set at creation time, cannot be changed without recreating the index)
 - **Why not ChromaDB on disk**: adds 100–500 MB to VPS disk, loads into RAM at startup
 - **Why not Supabase pgvector**: requires schema changes to existing DB; Pinecone is purpose-built
 - Requires `PINECONE_API_KEY` in `.env` (free at `pinecone.io`)
@@ -120,3 +121,20 @@ python scripts/ingest_scriptures.py --lang ita
 python scripts/ingest_conference.py --lang ita --from-year 2015
 python scripts/ingest_handbook.py --lang ita
 ```
+
+Ingestion scripts should support a `--dry-run` flag that scrapes, chunks, and reports stats (chunk counts, estimated token usage) without calling the embedding API or upserting to Pinecone. This is useful for cost control during development.
+
+## Auth & rate limiting
+
+All `/rag/*` routes require JWT authentication, reusing the existing auth middleware. This protects Anthropic API costs from unauthorized use. Rate limiting on `/rag/query` and `/rag/generate` should be added in Phase 3 before endpoints go live.
+
+## Cost optimizations
+
+- **Response caching**: Repeated identical queries can be cached using an LRU cache keyed on query hash. This cuts both latency and Anthropic API cost for common questions.
+- **Anthropic prompt caching**: The system prompt (which includes RAG instructions and formatting rules) can use Anthropic's prompt caching feature for up to 90% cost reduction on the cached prefix, since it stays constant across requests.
+
+## Dependency risks
+
+- **Pinecone and Voyage AI free tiers could change.** Keep ingestion scripts idempotent so you can re-ingest to a different provider if needed.
+- **Voyage fallback**: OpenAI `text-embedding-3-small` at $0.02/1M tokens. Swap in `embedder.py` — same interface, different API call.
+- **Pinecone fallback**: Upgrade to a paid plan, or migrate to an alternative provider. Export vectors first (Pinecone supports fetch-by-ID in bulk).

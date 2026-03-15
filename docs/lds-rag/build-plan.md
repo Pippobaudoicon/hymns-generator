@@ -24,7 +24,7 @@ Goal: working RAG pipeline with no data yet (unit-testable).
 
 ## Phase 2: Ingestion scripts
 
-Goal: populate ChromaDB with real LDS content.
+Goal: populate Pinecone with real LDS content.
 
 - [ ] `scripts/ingest_scriptures.py`
 - [ ] `scripts/ingest_conference.py`
@@ -45,6 +45,8 @@ Goal: exposed HTTP endpoints.
   - `GET /rag/sources` — list collections + chunk counts
 - [ ] Register router in `app.py`
 - [ ] `tests/test_rag_api.py`
+- [ ] Auth: require JWT login on all /rag/* routes (reuse existing auth middleware)
+- [ ] Rate limiting on /rag/query and /rag/generate to protect Anthropic API costs
 
 ## Phase 4: Frontend
 
@@ -60,10 +62,8 @@ Goal: usable web interface.
 
 ## Phase 5: Integration & polish
 
-- [ ] PM2 config update if needed (model loading at startup)
-- [ ] Rate limiting on `/rag/*` routes (avoid API cost abuse)
-- [ ] Auth: decide if RAG endpoints require login or are public
-- [ ] Makefile targets: `make rag-ingest`, `make rag-stats`
+- [ ] PM2 config update if needed (env vars, restart policy)
+- [ ] Makefile target: `make rag-stats`
 - [ ] Update `README.md` with RAG section
 
 ---
@@ -74,7 +74,7 @@ Goal: usable web interface.
 |---|---|---|
 | Vector DB | Pinecone serverless free tier | 2 GB free, zero VPS disk usage |
 | Embeddings | Voyage AI API (`voyage-multilingual-2`) | Free 200M tokens/month, zero VPS RAM |
-| LLM | Claude claude-sonnet-4-6 | Best reasoning, citation quality |
+| LLM | Claude claude-haiku-4-5 | Fast and cheap; upgrade to Sonnet for better quality if needed |
 | Project location | Module inside hymns-generator repo | Reuse auth, infra, deployment |
 | Scraping scope | Italian only, 2015+ for conference | VPS disk/RAM constraint |
 | Liahona | Skip initially | Lowest priority; saves ~12–100 MB |
@@ -94,4 +94,4 @@ The VPS runs only FastAPI + API calls. Its footprint for this module is ~0 MB di
 ## Open questions (resolve before/during implementation)
 
 1. **API keys** — need three: `ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`, `PINECONE_API_KEY`. All have free tiers.
-2. **Auth on RAG routes** — public access or require login?
+2. **Auth on RAG routes** — **resolved: login required** (JWT, reuse existing auth middleware)

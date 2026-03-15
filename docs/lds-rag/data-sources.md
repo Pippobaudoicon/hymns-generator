@@ -67,10 +67,12 @@ Split into chunks (~400 tokens, 50-token overlap)
     ↓
 Add metadata to each chunk
     ↓
-Embed chunks (sentence-transformers, batched)
+Embed chunks (Voyage AI API, batched)
     ↓
-Upsert into ChromaDB collection
+Upsert into Pinecone (namespace per source)
 ```
+
+**Note on chunking**: The ~400-token target is the actual constraint. For scriptures, verse grouping (3-5 verses) is flexible — some verse groups may be shorter or longer depending on content. The overlap and token budget take priority over strict verse counts.
 
 ## Running ingestion
 
@@ -85,16 +87,6 @@ python scripts/ingest_handbook.py --lang ita
 # Check what's been ingested
 python cli.py rag stats
 ```
-
-## Storage estimates (rough)
-
-| Source | Chunks (est.) | ChromaDB size (est.) |
-|---|---|---|
-| Scriptures (both langs) | ~60,000 | ~150 MB |
-| Conference talks 2000+ (both langs) | ~100,000 | ~250 MB |
-| Liahona 2010+ (both langs) | ~40,000 | ~100 MB |
-| General Handbook (both langs) | ~10,000 | ~25 MB |
-| **Total** | **~210,000** | **~525 MB** |
 
 ## Storage: not a VPS concern
 
