@@ -11,16 +11,16 @@
 
 Goal: working RAG pipeline with no data yet (unit-testable).
 
-- [ ] Add dependencies to `requirements.txt`: `pinecone`, `voyageai`, `anthropic`
-- [ ] `rag/__init__.py`
-- [ ] `rag/schemas.py` — Pydantic models: `RAGQuery`, `RAGResult`, `SearchResult`, `SourceChunk`
-- [ ] `rag/embedder.py` — Voyage AI API wrapper, expose `embed(texts)`
-- [ ] `rag/vector_store.py` — Pinecone wrapper: init index/namespaces, `upsert_chunks()`, `query()`
-- [ ] `rag/retriever.py` — `search(query, collection, lang, top_k)` → list of `SourceChunk`
-- [ ] `rag/generator.py` — Claude API call with retrieved context → `RAGResult`
-- [ ] `rag/pipeline.py` — `ask(query, lang, sources)` orchestrating all above
-- [ ] Add `ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`, `PINECONE_API_KEY` to `.env.example`
-- [ ] `tests/test_rag_pipeline.py` — unit tests with mock data
+- [x] Add dependencies to `requirements.txt`: `pinecone`, `voyageai`, `anthropic`
+- [x] `rag/__init__.py`
+- [x] `rag/schemas.py` — Pydantic models: `RAGQuery`, `RAGResult`, `SearchResult`, `SourceChunk`
+- [x] `rag/embedder.py` — Voyage AI API wrapper, expose `embed(texts)`
+- [x] `rag/vector_store.py` — Pinecone wrapper: init index/namespaces, `upsert_chunks()`, `query()`
+- [x] `rag/retriever.py` — `search(query, collection, lang, top_k)` → list of `SourceChunk`
+- [x] `rag/generator.py` — Claude API call with retrieved context → `RAGResult`
+- [x] `rag/pipeline.py` — `ask(query, lang, sources)` orchestrating all above
+- [x] Add `ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`, `PINECONE_API_KEY` to `.env.example`
+- [x] `tests/test_rag_pipeline.py` — unit tests with mock data
 
 ## Phase 2: Ingestion scripts
 

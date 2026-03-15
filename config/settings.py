@@ -43,6 +43,11 @@ class Settings:
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")
     )  # 24 hours
 
+    # RAG module API keys
+    VOYAGE_API_KEY: str = os.getenv("VOYAGE_API_KEY", "")
+    PINECONE_API_KEY: str = os.getenv("PINECONE_API_KEY", "")
+    ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
+
     @classmethod
     def get_data_path(cls) -> str:
         """Get the path to the hymns data file."""
