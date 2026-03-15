@@ -32,6 +32,8 @@ from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -96,6 +98,31 @@ def download_english(volumes: list[str], force: bool = False) -> list[Path]:
 
 CHURCH_BASE = "https://www.churchofjesuschrist.org"
 HEADERS = {"User-Agent": "LDS-RAG-Ingestion/1.0"}
+
+
+def _build_session() -> requests.Session:
+    """Build a requests Session with transport-level retry + backoff.
+
+    urllib3 retries handle DNS failures, connection resets, and timeouts
+    at the socket layer — creating fresh connections on each retry instead
+    of reusing a broken connection pool.
+    """
+    session = requests.Session()
+    session.headers.update(HEADERS)
+    retry = Retry(
+        total=4,
+        backoff_factor=3,          # 0s, 3s, 6s, 12s between retries
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET"],
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+
+
+SESSION = _build_session()
 
 # Volume slug on church site → (json filename, title, list of books)
 # Each book: (url_slug, display_name, num_chapters)
@@ -174,25 +201,16 @@ VOLUME_DEFS = {
 }
 
 
-def scrape_chapter_verses(volume_slug: str, book_slug: str, chapter: int, lang: str,
-                          max_retries: int = 3) -> list[dict]:
+def scrape_chapter_verses(volume_slug: str, book_slug: str, chapter: int, lang: str) -> list[dict]:
     """Scrape a single chapter and return a list of {verse, text, reference} dicts."""
     url = f"{CHURCH_BASE}/study/scriptures/{volume_slug}/{book_slug}/{chapter}?lang={lang}"
 
-    for attempt in range(max_retries):
-        try:
-            resp = requests.get(url, timeout=30, headers=HEADERS)
-            resp.raise_for_status()
-            break
-        except requests.RequestException as e:
-            if attempt < max_retries - 1:
-                wait = 2 ** attempt * 5  # 5s, 10s, 20s
-                logger.warning(f"  Attempt {attempt + 1}/{max_retries} failed for ch {chapter}: {e}")
-                logger.info(f"    Retrying in {wait}s...")
-                time.sleep(wait)
-            else:
-                logger.warning(f"  Failed {url} after {max_retries} attempts: {e}")
-                return []
+    try:
+        resp = SESSION.get(url, timeout=30)
+        resp.raise_for_status()
+    except requests.RequestException as e:
+        logger.warning(f"  Failed {url} after retries: {e}")
+        return []
 
     soup = BeautifulSoup(resp.text, "html.parser")
     verses = []
