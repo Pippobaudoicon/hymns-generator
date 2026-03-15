@@ -12,10 +12,10 @@ Saved to: data/scriptures-json/<lang>/<volume>.json
 
 Usage:
     python scripts/ingest_scriptures.py --lang ita                  # scrape + ingest
+    python scripts/ingest_scriptures.py --lang spa --scrape-only    # scrape Spanish, save JSON only
     python scripts/ingest_scriptures.py --lang ita --dry-run        # scrape + report stats
-    python scripts/ingest_scriptures.py --lang ita --scrape-only    # scrape + save JSON, no embed
     python scripts/ingest_scriptures.py --lang ita --force-scrape   # re-scrape even if JSON exists
-    python scripts/ingest_scriptures.py --lang eng                  # download + ingest
+    python scripts/ingest_scriptures.py --lang eng                  # download from bcbooks + ingest
 """
 
 import argparse
@@ -258,9 +258,9 @@ def scrape_and_save_volume(volume_slug: str, vol_def: dict, lang: str, out_dir: 
     return out_path
 
 
-def scrape_italian(force: bool = False) -> list[Path]:
-    """Scrape all Italian volumes, saving each as JSON. Skip if already exists."""
-    out_dir = JSON_DIR / "ita"
+def scrape_language(lang: str, force: bool = False) -> list[Path]:
+    """Scrape all volumes for *lang*, saving each as JSON. Skip if already exists."""
+    out_dir = JSON_DIR / lang
     out_dir.mkdir(parents=True, exist_ok=True)
     paths = []
 
@@ -271,8 +271,8 @@ def scrape_italian(force: bool = False) -> list[Path]:
             paths.append(out_path)
             continue
 
-        logger.info(f"Scraping {vol_def['title']}...")
-        paths.append(scrape_and_save_volume(volume_slug, vol_def, "ita", out_dir))
+        logger.info(f"Scraping {vol_def['title']} ({lang})...")
+        paths.append(scrape_and_save_volume(volume_slug, vol_def, lang, out_dir))
 
     return paths
 
@@ -329,7 +329,7 @@ def json_to_chunks(json_paths: list[Path], lang: str) -> list[dict]:
 
 def main():
     parser = argparse.ArgumentParser(description="Ingest scriptures into RAG vector store")
-    parser.add_argument("--lang", choices=["ita", "eng"], default="ita", help="Language")
+    parser.add_argument("--lang", default="ita", help="Language code (e.g. ita, eng, spa, por, fra, deu)")
     parser.add_argument("--dry-run", action="store_true", help="Report stats without embedding/upserting")
     parser.add_argument("--scrape-only", action="store_true", help="Only scrape and save JSON, no embedding")
     parser.add_argument("--force-scrape", action="store_true", help="Re-scrape/download even if JSON exists")
@@ -340,8 +340,8 @@ def main():
         logger.info("Getting English JSON from bcbooks/scriptures-json...")
         json_paths = download_english(force=args.force_scrape)
     else:
-        logger.info("Getting Italian JSON (scraping from churchofjesuschrist.org)...")
-        json_paths = scrape_italian(force=args.force_scrape)
+        logger.info(f"Getting {args.lang} JSON (scraping from churchofjesuschrist.org)...")
+        json_paths = scrape_language(args.lang, force=args.force_scrape)
 
     if args.scrape_only:
         print(f"\nJSON files saved to: {JSON_DIR / args.lang}/")
@@ -349,7 +349,7 @@ def main():
             size_kb = p.stat().st_size / 1024
             print(f"  {p.name} ({size_kb:.0f} KB)")
         print("\nThese files match the bcbooks/scriptures-json format.")
-        print("You can publish them as a standalone Italian scriptures dataset.")
+        print("You can publish them as a standalone scriptures dataset.")
         return
 
     # Step 2: Convert JSON → chunks
