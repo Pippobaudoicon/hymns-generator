@@ -166,16 +166,25 @@ VOLUME_DEFS = {
 }
 
 
-def scrape_chapter_verses(volume_slug: str, book_slug: str, chapter: int, lang: str) -> list[dict]:
+def scrape_chapter_verses(volume_slug: str, book_slug: str, chapter: int, lang: str,
+                          max_retries: int = 3) -> list[dict]:
     """Scrape a single chapter and return a list of {verse, text, reference} dicts."""
     url = f"{CHURCH_BASE}/study/scriptures/{volume_slug}/{book_slug}/{chapter}?lang={lang}"
 
-    try:
-        resp = requests.get(url, timeout=30, headers=HEADERS)
-        resp.raise_for_status()
-    except requests.RequestException as e:
-        logger.warning(f"  Failed {url}: {e}")
-        return []
+    for attempt in range(max_retries):
+        try:
+            resp = requests.get(url, timeout=30, headers=HEADERS)
+            resp.raise_for_status()
+            break
+        except requests.RequestException as e:
+            if attempt < max_retries - 1:
+                wait = 2 ** attempt * 5  # 5s, 10s, 20s
+                logger.warning(f"  Attempt {attempt + 1}/{max_retries} failed for ch {chapter}: {e}")
+                logger.info(f"    Retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                logger.warning(f"  Failed {url} after {max_retries} attempts: {e}")
+                return []
 
     soup = BeautifulSoup(resp.text, "html.parser")
     verses = []
@@ -224,6 +233,7 @@ def scrape_and_save_volume(volume_slug: str, vol_def: dict, lang: str, out_dir: 
         "books": [],
     }
 
+    consecutive_failures = 0
     for book_slug, book_name, num_chapters in vol_def["books"]:
         logger.info(f"  {book_name} ({num_chapters} ch)...")
         book_data = {
@@ -234,12 +244,22 @@ def scrape_and_save_volume(volume_slug: str, vol_def: dict, lang: str, out_dir: 
         }
 
         for ch in range(1, num_chapters + 1):
-            time.sleep(0.5)  # Rate limiting: 2 req/sec
+            # Back off harder when we see consecutive failures (likely network outage)
+            if consecutive_failures >= 3:
+                wait = min(consecutive_failures * 10, 120)
+                logger.info(f"    {consecutive_failures} consecutive failures — waiting {wait}s for network recovery...")
+                time.sleep(wait)
+            else:
+                time.sleep(0.5)  # Rate limiting: 2 req/sec
+
             verses = scrape_chapter_verses(volume_slug, book_slug, ch, lang)
 
             if not verses:
+                consecutive_failures += 1
                 logger.warning(f"    Chapter {ch}: no verses found")
                 continue
+
+            consecutive_failures = 0
 
             # Add reference field to each verse (bcbooks compat)
             for v in verses:
