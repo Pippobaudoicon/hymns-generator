@@ -1,5 +1,6 @@
 """Unit tests for the RAG pipeline with mocked external APIs."""
 
+import os
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -347,21 +348,10 @@ class TestRetriever:
 
 
 class TestGenerator:
-    """Test the Claude answer generator."""
+    """Test LLM answer generators (Anthropic and OpenAI)."""
 
-    @patch("rag.generator.anthropic")
-    def test_generate_answer(self, mock_anthropic):
-        mock_client = MagicMock()
-        mock_anthropic.Anthropic.return_value = mock_client
-
-        mock_response = MagicMock()
-        mock_response.content = [MagicMock(text="La fede è la certezza...")]
-        mock_client.messages.create.return_value = mock_response
-
-        from rag.generator import Generator
-
-        generator = Generator(api_key="test-key")
-        chunks = [
+    def _sample_chunks(self):
+        return [
             SourceChunk(
                 id="c1",
                 text="La fede è...",
@@ -373,9 +363,20 @@ class TestGenerator:
             )
         ]
 
+    @patch("rag.generator.anthropic")
+    def test_anthropic_generate(self, mock_anthropic):
+        mock_client = MagicMock()
+        mock_anthropic.Anthropic.return_value = mock_client
+        mock_response = MagicMock()
+        mock_response.content = [MagicMock(text="La fede è la certezza...")]
+        mock_client.messages.create.return_value = mock_response
+
+        from rag.generator import AnthropicGenerator
+
+        generator = AnthropicGenerator(api_key="test-key")
         result = generator.generate(
             query="Cos'è la fede?",
-            chunks=chunks,
+            chunks=self._sample_chunks(),
             language=Language.ITA,
         )
 
@@ -385,31 +386,93 @@ class TestGenerator:
         assert len(result.sources) == 1
         assert result.language == Language.ITA
 
-        # Verify Claude was called correctly
         call_kwargs = mock_client.messages.create.call_args[1]
         assert call_kwargs["model"] == "claude-haiku-4-5-20241022"
         assert "Rispondi in italiano" in call_kwargs["messages"][0]["content"]
 
     @patch("rag.generator.anthropic")
-    def test_generate_english(self, mock_anthropic):
+    def test_anthropic_english(self, mock_anthropic):
         mock_client = MagicMock()
         mock_anthropic.Anthropic.return_value = mock_client
         mock_response = MagicMock()
         mock_response.content = [MagicMock(text="Faith is...")]
         mock_client.messages.create.return_value = mock_response
 
-        from rag.generator import Generator
+        from rag.generator import AnthropicGenerator
 
-        generator = Generator(api_key="test-key")
-        result = generator.generate(
-            query="What is faith?",
-            chunks=[],
-            language=Language.ENG,
-        )
+        generator = AnthropicGenerator(api_key="test-key")
+        result = generator.generate(query="What is faith?", chunks=[], language=Language.ENG)
 
         call_kwargs = mock_client.messages.create.call_args[1]
         assert "Answer in English" in call_kwargs["messages"][0]["content"]
         assert result.language == Language.ENG
+
+    @patch("rag.generator.openai")
+    def test_openai_generate(self, mock_openai):
+        mock_client = MagicMock()
+        mock_openai.OpenAI.return_value = mock_client
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content="La fede è la certezza..."))]
+        mock_client.chat.completions.create.return_value = mock_response
+
+        from rag.generator import OpenAIGenerator
+
+        generator = OpenAIGenerator(api_key="test-key")
+        result = generator.generate(
+            query="Cos'è la fede?",
+            chunks=self._sample_chunks(),
+            language=Language.ITA,
+        )
+
+        assert isinstance(result, RAGResult)
+        assert result.answer == "La fede è la certezza..."
+        assert result.model == "gpt-4o-mini"
+
+        call_kwargs = mock_client.chat.completions.create.call_args[1]
+        assert call_kwargs["model"] == "gpt-4o-mini"
+        assert call_kwargs["messages"][0]["role"] == "system"
+        assert "Rispondi in italiano" in call_kwargs["messages"][1]["content"]
+
+    @patch("rag.generator.openai")
+    def test_openai_custom_model(self, mock_openai):
+        mock_client = MagicMock()
+        mock_openai.OpenAI.return_value = mock_client
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content="Answer"))]
+        mock_client.chat.completions.create.return_value = mock_response
+
+        from rag.generator import OpenAIGenerator
+
+        generator = OpenAIGenerator(api_key="test-key", model="gpt-4o")
+        result = generator.generate(query="test", chunks=[], language=Language.ENG)
+
+        assert result.model == "gpt-4o"
+        call_kwargs = mock_client.chat.completions.create.call_args[1]
+        assert call_kwargs["model"] == "gpt-4o"
+
+    def test_factory_defaults_to_anthropic(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "anthropic"}, clear=False):
+            with patch("rag.generator.anthropic"):
+                from rag.generator import AnthropicGenerator, Generator
+
+                gen = Generator(api_key="test")
+                assert isinstance(gen, AnthropicGenerator)
+
+    def test_factory_openai(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "openai"}, clear=False):
+            with patch("rag.generator.openai"):
+                from rag.generator import Generator, OpenAIGenerator
+
+                gen = Generator(api_key="test", provider="openai")
+                assert isinstance(gen, OpenAIGenerator)
+
+    def test_factory_explicit_provider_overrides_env(self):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "anthropic"}, clear=False):
+            with patch("rag.generator.openai"):
+                from rag.generator import Generator, OpenAIGenerator
+
+                gen = Generator(api_key="test", provider="openai")
+                assert isinstance(gen, OpenAIGenerator)
 
 
 # ---------------------------------------------------------------------------

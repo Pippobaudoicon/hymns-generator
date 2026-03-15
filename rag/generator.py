@@ -1,8 +1,9 @@
-"""LLM answer generation using Claude API."""
+"""LLM answer generation — supports Anthropic (Claude) and OpenAI (GPT)."""
 
 import os
 
 import anthropic
+import openai
 
 from .schemas import Language, RAGResult, SourceChunk
 
@@ -47,13 +48,23 @@ def _format_context(chunks: list[SourceChunk]) -> str:
     return "\n\n---\n\n".join(parts)
 
 
-class Generator:
-    """Generates answers using Claude with retrieved context."""
+def _build_user_message(query: str, chunks: list[SourceChunk], language: Language) -> str:
+    """Build the user message with context and language instruction."""
+    context = _format_context(chunks)
+    lang_instruction = (
+        "Rispondi in italiano." if language == Language.ITA else "Answer in English."
+    )
+    return f"{lang_instruction}\n\nContext:\n{context}\n\nQuestion: {query}"
 
-    MODEL = "claude-haiku-4-5-20241022"
 
-    def __init__(self, api_key: str | None = None):
+class AnthropicGenerator:
+    """Generates answers using Claude (Anthropic API)."""
+
+    DEFAULT_MODEL = "claude-haiku-4-5-20241022"
+
+    def __init__(self, api_key: str | None = None, model: str | None = None):
         self._api_key = api_key or os.getenv("ANTHROPIC_API_KEY", "")
+        self._model = model or self.DEFAULT_MODEL
         self._client = anthropic.Anthropic(api_key=self._api_key)
 
     def generate(
@@ -62,41 +73,80 @@ class Generator:
         chunks: list[SourceChunk],
         language: Language = Language.ITA,
     ) -> RAGResult:
-        """Generate an answer using Claude with retrieved context.
-
-        Args:
-            query: The user's question.
-            chunks: Retrieved source chunks for context.
-            language: Response language.
-
-        Returns:
-            RAGResult with the generated answer and source citations.
-        """
-        context = _format_context(chunks)
-
-        lang_instruction = (
-            "Rispondi in italiano." if language == Language.ITA else "Answer in English."
-        )
-
-        user_message = (
-            f"{lang_instruction}\n\n"
-            f"Context:\n{context}\n\n"
-            f"Question: {query}"
-        )
+        user_message = _build_user_message(query, chunks, language)
 
         response = self._client.messages.create(
-            model=self.MODEL,
+            model=self._model,
             max_tokens=1024,
             system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": user_message}],
         )
 
-        answer = response.content[0].text
+        return RAGResult(
+            query=query,
+            answer=response.content[0].text,
+            sources=chunks,
+            language=language,
+            model=self._model,
+        )
+
+
+class OpenAIGenerator:
+    """Generates answers using GPT (OpenAI API)."""
+
+    DEFAULT_MODEL = "gpt-4o-mini"
+
+    def __init__(self, api_key: str | None = None, model: str | None = None):
+        self._api_key = api_key or os.getenv("OPENAI_API_KEY", "")
+        self._model = model or self.DEFAULT_MODEL
+        self._client = openai.OpenAI(api_key=self._api_key)
+
+    def generate(
+        self,
+        query: str,
+        chunks: list[SourceChunk],
+        language: Language = Language.ITA,
+    ) -> RAGResult:
+        user_message = _build_user_message(query, chunks, language)
+
+        response = self._client.chat.completions.create(
+            model=self._model,
+            max_tokens=1024,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_message},
+            ],
+        )
 
         return RAGResult(
             query=query,
-            answer=answer,
+            answer=response.choices[0].message.content,
             sources=chunks,
             language=language,
-            model=self.MODEL,
+            model=self._model,
         )
+
+
+# Factory — keeps backward compatibility
+def Generator(
+    api_key: str | None = None,
+    provider: str | None = None,
+    model: str | None = None,
+) -> AnthropicGenerator | OpenAIGenerator:
+    """Create a generator for the configured LLM provider.
+
+    Args:
+        api_key: API key override. If None, reads from env.
+        provider: "anthropic" or "openai". If None, reads LLM_PROVIDER env var.
+        model: Model name override. If None, uses provider default.
+
+    Returns:
+        AnthropicGenerator or OpenAIGenerator instance.
+    """
+    if provider is None:
+        provider = os.getenv("LLM_PROVIDER", "anthropic").lower()
+
+    if provider == "openai":
+        return OpenAIGenerator(api_key=api_key, model=model)
+
+    return AnthropicGenerator(api_key=api_key, model=model)

@@ -47,6 +47,8 @@ class Settings:
     VOYAGE_API_KEY: str = os.getenv("VOYAGE_API_KEY", "")
     PINECONE_API_KEY: str = os.getenv("PINECONE_API_KEY", "")
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "anthropic")  # "anthropic" or "openai"
 
     @classmethod
     def get_data_path(cls) -> str:

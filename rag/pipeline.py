@@ -1,5 +1,7 @@
 """RAG pipeline orchestrating embedder, retriever, and generator."""
 
+from typing import Any
+
 from .embedder import Embedder
 from .generator import Generator
 from .retriever import Retriever
@@ -15,7 +17,7 @@ class RAGPipeline:
         embedder: Embedder | None = None,
         vector_store: VectorStore | None = None,
         retriever: Retriever | None = None,
-        generator: Generator | None = None,
+        generator: Any = None,
     ):
         self._embedder = embedder or Embedder()
         self._vector_store = vector_store or VectorStore()
