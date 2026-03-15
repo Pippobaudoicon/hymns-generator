@@ -32,10 +32,10 @@ help:
 	@echo "  make stats          - Show hymn statistics"
 	@echo ""
 	@echo "RAG Commands:"
-	@echo "  make rag-ingest     - Ingest all RAG sources (run on dev machine)"
-	@echo "  make rag-ingest-dry - Dry run: report chunk stats without embedding"
-	@echo "  make rag-scrape LANG=ita  - Scrape scriptures → JSON only (any lang)"
-	@echo "  make rag-stats      - Show RAG vector store statistics"
+	@echo "  make rag-ingest [LANG=ita]     - Ingest all RAG sources (default: ita)"
+	@echo "  make rag-ingest-dry [LANG=ita] - Dry run: report chunk stats"
+	@echo "  make rag-scrape [LANG=ita]     - Scrape scriptures → JSON only"
+	@echo "  make rag-stats                 - Show RAG vector store statistics"
 	@echo ""
 
 # Installation
@@ -133,17 +133,17 @@ demo:
 	python cli.py demo
 
 # RAG module
+LANG ?= ita
+
 rag-ingest:
-	python scripts/ingest_scriptures.py --lang ita
-	python scripts/ingest_conference.py --lang ita --from-year 2015
-	python scripts/ingest_handbook.py --lang ita
+	python scripts/ingest_scriptures.py --lang $(LANG)
+	python scripts/ingest_conference.py --lang $(LANG) --from-year 2015
+	python scripts/ingest_handbook.py --lang $(LANG)
 
 rag-ingest-dry:
-	python scripts/ingest_scriptures.py --lang ita --dry-run
-	python scripts/ingest_conference.py --lang ita --from-year 2015 --dry-run
-	python scripts/ingest_handbook.py --lang ita --dry-run
-
-LANG ?= ita
+	python scripts/ingest_scriptures.py --lang $(LANG) --dry-run
+	python scripts/ingest_conference.py --lang $(LANG) --from-year 2015 --dry-run
+	python scripts/ingest_handbook.py --lang $(LANG) --dry-run
 rag-scrape:
 	python scripts/ingest_scriptures.py --lang $(LANG) --scrape-only
 
