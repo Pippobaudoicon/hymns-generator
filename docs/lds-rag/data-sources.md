@@ -2,15 +2,15 @@
 
 ## Source 1: Scriptures
 
-**Strategy**: Download structured JSON — no scraping needed.
+**Strategy**: Depends on language.
 
-- Source: `https://github.com/bcbooks/scriptures-json` or `scriptures.byu.edu`
-- Format: Clean JSON with book/chapter/verse structure
-- Volumes: Old Testament, New Testament, Book of Mormon, D&C, Pearl of Great Price
-- Languages: English and Italian JSON available separately
+- **English**: Download structured JSON from `https://github.com/bcbooks/scriptures-json` (verse-level structure, no scraping)
+- **Italian**: Scrape from `churchofjesuschrist.org/study/scriptures/` (no public Italian JSON source exists)
+- Volumes: Old Testament (key books), New Testament, Book of Mormon, D&C, Pearl of Great Price
 - Script: `scripts/ingest_scriptures.py`
+- Rate limiting (Italian): 0.5s between requests
 
-**Chunking**: By verse or small verse groups (3-5 verses), keeping book+chapter+verse as metadata.
+**Chunking**: By verse groups (3-5 verses) when verse-level data is available, or ~400-token text chunks as fallback.
 
 ---
 
