@@ -1,12 +1,16 @@
 """Pinecone vector store wrapper."""
 
+import logging
 import os
 from typing import Any
 
-from pinecone import Pinecone
+from pinecone import Pinecone, ServerlessSpec
+from pinecone.exceptions import NotFoundException
 
 from .embedder import Embedder
 from .schemas import SourceType
+
+logger = logging.getLogger(__name__)
 
 
 class VectorStore:
@@ -19,7 +23,21 @@ class VectorStore:
     def __init__(self, api_key: str | None = None):
         self._api_key = api_key or os.getenv("PINECONE_API_KEY", "")
         self._pc = Pinecone(api_key=self._api_key)
-        self._index = self._pc.Index(self.INDEX_NAME)
+        self._index = self._ensure_index()
+
+    def _ensure_index(self):
+        """Get the Pinecone index, creating it if it doesn't exist."""
+        try:
+            return self._pc.Index(self.INDEX_NAME)
+        except NotFoundException:
+            logger.info(f"Index '{self.INDEX_NAME}' not found — creating it")
+            self._pc.create_index(
+                name=self.INDEX_NAME,
+                dimension=self.DIMENSION,
+                metric=self.METRIC,
+                spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+            )
+            return self._pc.Index(self.INDEX_NAME)
 
     def upsert_chunks(
         self,
