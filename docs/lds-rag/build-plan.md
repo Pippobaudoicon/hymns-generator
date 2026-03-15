@@ -26,44 +26,44 @@ Goal: working RAG pipeline with no data yet (unit-testable).
 
 Goal: populate Pinecone with real LDS content.
 
-- [ ] `scripts/ingest_scriptures.py`
-- [ ] `scripts/ingest_conference.py`
-- [ ] `scripts/ingest_liahona.py`
-- [ ] `scripts/ingest_handbook.py`
-- [ ] Add `make rag-ingest` target to Makefile
-- [ ] Add `python cli.py rag stats` CLI command
-- [ ] Nothing to gitignore — no local data files
+- [x] `scripts/ingest_scriptures.py`
+- [x] `scripts/ingest_conference.py`
+- [x] `scripts/ingest_liahona.py`
+- [x] `scripts/ingest_handbook.py`
+- [x] Add `make rag-ingest` target to Makefile
+- [x] Add `python cli.py rag stats` CLI command
+- [x] Nothing to gitignore — no local data files
 
 ## Phase 3: API routes
 
 Goal: exposed HTTP endpoints.
 
-- [ ] `api/routes/rag.py`:
+- [x] `api/routes/rag.py`:
   - `POST /rag/query` — full RAG Q&A
   - `GET /rag/search` — semantic search (params: `q`, `source`, `lang`, `top_k`)
   - `POST /rag/generate` — generate content (talk, lesson outline, etc.)
   - `GET /rag/sources` — list collections + chunk counts
-- [ ] Register router in `app.py`
-- [ ] `tests/test_rag_api.py`
-- [ ] Auth: require JWT login on all /rag/* routes (reuse existing auth middleware)
-- [ ] Rate limiting on /rag/query and /rag/generate to protect Anthropic API costs
+- [x] Register router in `app.py`
+- [x] `tests/test_rag_api.py`
+- [x] Auth: require JWT login on all /rag/* routes (reuse existing auth middleware)
+- [x] Rate limiting on /rag/query and /rag/generate to protect Anthropic API costs
 
 ## Phase 4: Frontend
 
 Goal: usable web interface.
 
-- [ ] `static/rag.html` — chat/search UI
+- [x] `static/rag.html` — chat/search UI
   - Chat mode: Q&A with source citations shown below answer
   - Search mode: list of matching passages with source metadata
   - Language toggle: ITA / ENG
   - Source filter: checkboxes for scriptures / conference / liahona / handbook
-- [ ] Wire to API endpoints with fetch
-- [ ] Link from existing `index.html` nav
+- [x] Wire to API endpoints with fetch
+- [x] Link from existing `index.html` nav
 
 ## Phase 5: Integration & polish
 
-- [ ] PM2 config update if needed (env vars, restart policy)
-- [ ] Makefile target: `make rag-stats`
+- [x] PM2 config update if needed (env vars, restart policy)
+- [x] Makefile target: `make rag-stats`
 - [ ] Update `README.md` with RAG section
 
 ---

@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domande & Risposte - LDS RAG</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#003f87">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="/static/icons/icon-152x152.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/icon-72x72.png">
+
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/auth.css">
+    <style>
+        .rag-container {
+            max-width: 800px;
+            margin: 40px auto 0;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 80vh;
+        }
+
+        .rag-header {
+            background: var(--gradient);
+            color: white;
+            padding: 24px 30px;
+            text-align: center;
+        }
+
+        .rag-header h1 { font-size: 1.6em; margin-bottom: 6px; }
+        .rag-header p { opacity: 0.85; font-size: 0.95em; }
+
+        .rag-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 14px 20px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+
+        .rag-mode-btn {
+            padding: 8px 18px;
+            border: 2px solid var(--primary-color);
+            background: white;
+            color: var(--primary-color);
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .rag-mode-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .rag-lang-toggle {
+            margin-left: auto;
+            display: flex;
+            border: 2px solid #ccc;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .rag-lang-btn {
+            padding: 6px 14px;
+            border: none;
+            background: white;
+            font-weight: 600;
+            font-size: 0.85em;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .rag-lang-btn.active {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .rag-filters {
+            display: flex;
+            gap: 14px;
+            padding: 12px 24px;
+            background: #fafafa;
+            border-bottom: 1px solid #eee;
+            flex-wrap: wrap;
+        }
+
+        .rag-filter-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.88em;
+            color: #555;
+            cursor: pointer;
+        }
+
+        .rag-filter-label input { cursor: pointer; }
+
+        .rag-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .rag-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px;
+        }
+
+        .rag-message {
+            margin-bottom: 18px;
+            max-width: 90%;
+        }
+
+        .rag-message.user {
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .rag-message .bubble {
+            display: inline-block;
+            padding: 12px 18px;
+            border-radius: 16px;
+            line-height: 1.5;
+            text-align: left;
+            word-break: break-word;
+        }
+
+        .rag-message.user .bubble {
+            background: var(--primary-color);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .rag-message.assistant .bubble {
+            background: #f0f0f0;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+
+        .rag-sources {
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: #e8eaf6;
+            border-radius: 10px;
+            font-size: 0.85em;
+        }
+
+        .rag-sources summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .rag-source-item {
+            padding: 6px 0;
+            border-bottom: 1px solid #d0d4e8;
+        }
+
+        .rag-source-item:last-child { border-bottom: none; }
+        .rag-source-item .ref { font-weight: 600; color: #333; }
+        .rag-source-item .text { color: #555; font-size: 0.92em; margin-top: 2px; }
+        .rag-source-item .score { color: #888; font-size: 0.8em; }
+
+        .rag-input-area {
+            display: flex;
+            gap: 10px;
+            padding: 16px 24px;
+            border-top: 1px solid #e0e0e0;
+            background: white;
+        }
+
+        .rag-input-area input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 24px;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .rag-input-area input:focus { border-color: var(--primary-color); }
+
+        .rag-send-btn {
+            padding: 12px 22px;
+            background: var(--gradient);
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+        }
+
+        .rag-send-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px var(--primary-shadow);
+        }
+
+        .rag-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .rag-welcome {
+            text-align: center;
+            padding: 60px 30px;
+            color: #888;
+        }
+
+        .rag-welcome h2 { color: #555; margin-bottom: 10px; }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        .back-link:hover { color: white; }
+
+        .typing-indicator .bubble::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        /* Search mode results */
+        .search-results { padding: 20px 24px; overflow-y: auto; flex: 1; }
+
+        .search-result-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: box-shadow 0.2s;
+        }
+
+        .search-result-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+        .search-result-card .ref { font-weight: 600; color: var(--primary-color); }
+        .search-result-card .text { color: #444; margin-top: 6px; line-height: 1.5; }
+        .search-result-card .meta { color: #888; font-size: 0.82em; margin-top: 6px; }
+
+        @media (max-width: 600px) {
+            .rag-container { margin: 10px; border-radius: 12px; min-height: 90vh; }
+            .rag-nav { gap: 8px; padding: 10px 14px; }
+            .rag-lang-toggle { margin-left: 0; }
+            .rag-message { max-width: 95%; }
+        }
+    </style>
+</head>
+<body>
+    <!-- User Menu (same as other pages) -->
+    <div class="user-menu" id="userMenu">
+        <button class="user-menu-btn" onclick="toggleUserMenu()">
+            <span class="user-avatar" id="userAvatar">?</span>
+            <span class="user-name" id="userName">Utente</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="user-dropdown" id="userDropdown">
+            <div class="user-dropdown-header">
+                <div class="user-email" id="userEmail"></div>
+                <div class="user-role" id="userRole"></div>
+            </div>
+            <a href="#" class="user-dropdown-item logout" onclick="logout()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                Esci
+            </a>
+        </div>
+    </div>
+
+    <div class="rag-container">
+        <div class="rag-header">
+            <a href="/dashboard" class="back-link">&larr; Dashboard</a>
+            <h1>Domande & Risposte</h1>
+            <p>Risposte fondate sulle fonti ufficiali della Chiesa</p>
+        </div>
+
+        <div class="rag-nav">
+            <button class="rag-mode-btn active" data-mode="chat" onclick="setMode('chat')">Chat</button>
+            <button class="rag-mode-btn" data-mode="search" onclick="setMode('search')">Ricerca</button>
+            <div class="rag-lang-toggle">
+                <button class="rag-lang-btn active" data-lang="ita" onclick="setLang('ita')">ITA</button>
+                <button class="rag-lang-btn" data-lang="eng" onclick="setLang('eng')">ENG</button>
+            </div>
+        </div>
+
+        <div class="rag-filters">
+            <label class="rag-filter-label"><input type="checkbox" value="scriptures" checked> Scritture</label>
+            <label class="rag-filter-label"><input type="checkbox" value="conference" checked> Conferenza</label>
+            <label class="rag-filter-label"><input type="checkbox" value="handbook" checked> Manuale</label>
+            <label class="rag-filter-label"><input type="checkbox" value="liahona"> Liahona</label>
+        </div>
+
+        <div class="rag-body">
+            <!-- Chat mode -->
+            <div class="rag-messages" id="ragMessages">
+                <div class="rag-welcome" id="ragWelcome">
+                    <h2>Benvenuto</h2>
+                    <p>Fai una domanda sulle Scritture, la Conferenza Generale, o il Manuale Generale.</p>
+                </div>
+            </div>
+
+            <!-- Search mode (hidden by default) -->
+            <div class="search-results" id="searchResults" style="display:none;"></div>
+        </div>
+
+        <div class="rag-input-area">
+            <input type="text" id="ragInput" placeholder="Scrivi la tua domanda..." autocomplete="off">
+            <button class="rag-send-btn" id="ragSendBtn" onclick="sendMessage()">Invia</button>
+        </div>
+    </div>
+
+    <script src="/static/js/auth.js"></script>
+    <script>
+        // Auth check
+        if (!authService.isAuthenticated()) {
+            window.location.href = '/login';
+        } else {
+            const user = authService.getUser();
+            if (user) {
+                document.getElementById('userAvatar').textContent = authService.getUserInitials();
+                document.getElementById('userName').textContent = user.full_name || user.username;
+                document.getElementById('userEmail').textContent = user.email || '';
+                document.getElementById('userRole').textContent = authService.getRoleDisplayName(user.role);
+            }
+        }
+
+        // State
+        let currentMode = 'chat';
+        let currentLang = 'ita';
+
+        function getSelectedSources() {
+            return Array.from(document.querySelectorAll('.rag-filters input:checked')).map(el => el.value);
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.rag-mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+            document.getElementById('ragMessages').style.display = mode === 'chat' ? 'block' : 'none';
+            document.getElementById('searchResults').style.display = mode === 'search' ? 'block' : 'none';
+            document.getElementById('ragInput').placeholder = mode === 'chat'
+                ? 'Scrivi la tua domanda...'
+                : 'Cerca nelle fonti...';
+        }
+
+        function setLang(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.rag-lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+        }
+
+        function addMessage(role, html) {
+            const welcome = document.getElementById('ragWelcome');
+            if (welcome) welcome.remove();
+
+            const container = document.getElementById('ragMessages');
+            const div = document.createElement('div');
+            div.className = `rag-message ${role}`;
+            div.innerHTML = `<div class="bubble">${html}</div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return div;
+        }
+
+        function formatSources(sources) {
+            if (!sources || sources.length === 0) return '';
+
+            let html = '<div class="rag-sources"><details><summary>Fonti (' + sources.length + ')</summary>';
+            sources.forEach(s => {
+                let ref = '';
+                if (s.book) {
+                    ref = s.book;
+                    if (s.chapter) ref += ' ' + s.chapter;
+                    if (s.verse) ref += ':' + s.verse;
+                } else if (s.title) {
+                    ref = s.title;
+                    if (s.speaker) ref += ' — ' + s.speaker;
+                } else if (s.section) {
+                    ref = 'Sezione ' + s.section;
+                }
+
+                html += '<div class="rag-source-item">';
+                html += '<div class="ref">' + escapeHtml(ref) + '</div>';
+                html += '<div class="text">' + escapeHtml(s.text.substring(0, 200)) + (s.text.length > 200 ? '...' : '') + '</div>';
+                html += '<div class="score">Rilevanza: ' + (s.score * 100).toFixed(0) + '%</div>';
+                html += '</div>';
+            });
+            html += '</details></div>';
+            return html;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function renderSearchResults(data) {
+            const container = document.getElementById('searchResults');
+            if (!data.chunks || data.chunks.length === 0) {
+                container.innerHTML = '<div class="rag-welcome"><h2>Nessun risultato</h2><p>Prova con termini diversi.</p></div>';
+                return;
+            }
+
+            let html = '';
+            data.chunks.forEach(s => {
+                let ref = '';
+                if (s.book) {
+                    ref = s.book;
+                    if (s.chapter) ref += ' ' + s.chapter;
+                    if (s.verse) ref += ':' + s.verse;
+                } else if (s.title) {
+                    ref = s.title;
+                    if (s.speaker) ref += ' — ' + s.speaker;
+                } else if (s.section) {
+                    ref = 'Sezione ' + s.section;
+                }
+
+                html += '<div class="search-result-card">';
+                html += '<div class="ref">' + escapeHtml(ref) + '</div>';
+                html += '<div class="text">' + escapeHtml(s.text) + '</div>';
+                html += '<div class="meta">' + s.source + ' &middot; Rilevanza: ' + (s.score * 100).toFixed(0) + '%</div>';
+                html += '</div>';
+            });
+            container.innerHTML = html;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('ragInput');
+            const query = input.value.trim();
+            if (!query) return;
+
+            const sources = getSelectedSources();
+            if (sources.length === 0) {
+                alert('Seleziona almeno una fonte.');
+                return;
+            }
+
+            input.value = '';
+            const sendBtn = document.getElementById('ragSendBtn');
+            sendBtn.disabled = true;
+
+            const token = authService.getToken();
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+            };
+
+            try {
+                if (currentMode === 'chat') {
+                    addMessage('user', escapeHtml(query));
+                    const typing = addMessage('assistant', '');
+                    typing.classList.add('typing-indicator');
+
+                    const resp = await fetch('/api/v1/rag/query', {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({
+                            question: query,
+                            language: currentLang,
+                            sources: sources,
+                            top_k: 5,
+                        }),
+                    });
+
+                    typing.remove();
+
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        addMessage('assistant', '<span style="color:#c00">' + escapeHtml(err.detail || 'Errore nel generare la risposta.') + '</span>');
+                        return;
+                    }
+
+                    const data = await resp.json();
+                    const answerHtml = escapeHtml(data.answer).replace(/\n/g, '<br>');
+                    const sourcesHtml = formatSources(data.sources);
+                    addMessage('assistant', answerHtml + sourcesHtml);
+
+                } else {
+                    // Search mode
+                    const params = new URLSearchParams({ q: query, lang: currentLang, top_k: '10' });
+                    if (sources.length === 1) params.set('source', sources[0]);
+
+                    const resp = await fetch('/api/v1/rag/search?' + params.toString(), {
+                        headers,
+                    });
+
+                    if (!resp.ok) {
+                        document.getElementById('searchResults').innerHTML =
+                            '<div class="rag-welcome"><h2>Errore</h2><p>Impossibile completare la ricerca.</p></div>';
+                        return;
+                    }
+
+                    const data = await resp.json();
+                    renderSearchResults(data);
+                }
+            } catch (err) {
+                if (currentMode === 'chat') {
+                    addMessage('assistant', '<span style="color:#c00">Errore di rete. Riprova.</span>');
+                } else {
+                    document.getElementById('searchResults').innerHTML =
+                        '<div class="rag-welcome"><h2>Errore di rete</h2><p>Controlla la connessione e riprova.</p></div>';
+                }
+            } finally {
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        // Enter key to send
+        document.getElementById('ragInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // User menu toggle
+        function toggleUserMenu() {
+            document.getElementById('userDropdown').classList.toggle('show');
+        }
+
+        function logout() {
+            authService.logout();
+            window.location.href = '/login';
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.user-menu')) {
+                document.getElementById('userDropdown').classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>

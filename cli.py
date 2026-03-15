@@ -241,6 +241,35 @@ def demo_command(args):
     return 0
 
 
+def rag_command(args):
+    """Handle RAG module commands."""
+    setup_logging(args.debug)
+
+    if args.action == "stats":
+        try:
+            from rag.vector_store import VectorStore
+
+            store = VectorStore()
+            namespaces = store.list_namespaces()
+
+            print("RAG Vector Store Statistics:")
+            total = 0
+            for ns, count in sorted(namespaces.items()):
+                print(f"  {ns}: {count:,} vectors")
+                total += count
+            print(f"  ---")
+            print(f"  Total: {total:,} vectors")
+
+            if not namespaces:
+                print("  (no data ingested yet)")
+
+        except Exception as e:
+            print(f"Error getting RAG stats: {e}")
+            return 1
+
+    return 0
+
+
 def main():
     """Main CLI function."""
     parser = argparse.ArgumentParser(
@@ -323,6 +352,13 @@ def main():
     # Demo command
     demo_parser = subparsers.add_parser("demo", help="Create demo data")
     demo_parser.set_defaults(func=demo_command)
+
+    # RAG command
+    rag_parser = subparsers.add_parser("rag", help="RAG module management")
+    rag_parser.add_argument(
+        "action", choices=["stats"], help="RAG action to perform"
+    )
+    rag_parser.set_defaults(func=rag_command)
 
     args = parser.parse_args()
 

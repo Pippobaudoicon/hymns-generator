@@ -27,6 +27,15 @@ const tools = [
         badge: 'new',
         disabled: false,
     },
+    {
+        id: 'rag',
+        title: 'Domande & Risposte',
+        description: 'Fai domande su Scritture, discorsi della Conferenza Generale, e il Manuale Generale. Risposte fondate sulle fonti ufficiali.',
+        icon: 'book',
+        url: '/rag',
+        badge: 'new',
+        disabled: false,
+    },
     // Example of future tools (commented out):
     // {
     //     id: 'calendar',

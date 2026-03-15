@@ -31,6 +31,11 @@ help:
 	@echo "  make scrape         - Scrape fresh hymn data"
 	@echo "  make stats          - Show hymn statistics"
 	@echo ""
+	@echo "RAG Commands:"
+	@echo "  make rag-ingest     - Ingest all RAG sources (run on dev machine)"
+	@echo "  make rag-ingest-dry - Dry run: report chunk stats without embedding"
+	@echo "  make rag-stats      - Show RAG vector store statistics"
+	@echo ""
 
 # Installation
 install:
@@ -125,6 +130,20 @@ stats:
 
 demo:
 	python cli.py demo
+
+# RAG module
+rag-ingest:
+	python scripts/ingest_scriptures.py --lang ita
+	python scripts/ingest_conference.py --lang ita --from-year 2015
+	python scripts/ingest_handbook.py --lang ita
+
+rag-ingest-dry:
+	python scripts/ingest_scriptures.py --lang ita --dry-run
+	python scripts/ingest_conference.py --lang ita --from-year 2015 --dry-run
+	python scripts/ingest_handbook.py --lang ita --dry-run
+
+rag-stats:
+	python cli.py rag stats
 
 # CI/CD
 ci: lint test

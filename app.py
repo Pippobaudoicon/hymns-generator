@@ -132,6 +132,12 @@ def admin_page():
     """Serve the admin page."""
     return FileResponse("static/admin.html")
 
+# RAG page
+@app.get("/rag", tags=["Root"])
+def rag_page():
+    """Serve the RAG Q&A interface."""
+    return FileResponse("static/rag.html")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
