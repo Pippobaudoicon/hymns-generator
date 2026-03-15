@@ -34,6 +34,8 @@ help:
 	@echo "RAG Commands:"
 	@echo "  make rag-ingest     - Ingest all RAG sources (run on dev machine)"
 	@echo "  make rag-ingest-dry - Dry run: report chunk stats without embedding"
+	@echo "  make rag-scrape-ita - Scrape Italian scriptures → JSON only (no embed)"
+	@echo "  make rag-scrape-eng - Download English scriptures → JSON only (no embed)"
 	@echo "  make rag-stats      - Show RAG vector store statistics"
 	@echo ""
 
@@ -141,6 +143,12 @@ rag-ingest-dry:
 	python scripts/ingest_scriptures.py --lang ita --dry-run
 	python scripts/ingest_conference.py --lang ita --from-year 2015 --dry-run
 	python scripts/ingest_handbook.py --lang ita --dry-run
+
+rag-scrape-ita:
+	python scripts/ingest_scriptures.py --lang ita --scrape-only
+
+rag-scrape-eng:
+	python scripts/ingest_scriptures.py --lang eng --scrape-only
 
 rag-stats:
 	python cli.py rag stats
