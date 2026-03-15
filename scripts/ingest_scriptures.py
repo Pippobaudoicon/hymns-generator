@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
 """Ingest scriptures into the RAG vector store.
 
-For English: downloads structured JSON from bcbooks/scriptures-json (GitHub).
-For Italian: scrapes from churchofjesuschrist.org/study/scriptures.
+Produces clean, structured JSON files (bcbooks-compatible format) per volume,
+then chunks and embeds them for Pinecone.
+
+English JSON is downloaded from bcbooks/scriptures-json.
+Italian JSON is scraped from churchofjesuschrist.org and saved locally so
+you only need to scrape once — reusable as a standalone dataset.
+
+Saved to: data/scriptures-json/<lang>/<volume>.json
 
 Usage:
-    python scripts/ingest_scriptures.py --lang ita
-    python scripts/ingest_scriptures.py --lang eng
-    python scripts/ingest_scriptures.py --lang ita --dry-run
+    python scripts/ingest_scriptures.py --lang ita                  # scrape + ingest
+    python scripts/ingest_scriptures.py --lang ita --dry-run        # scrape + report stats
+    python scripts/ingest_scriptures.py --lang ita --scrape-only    # scrape + save JSON, no embed
+    python scripts/ingest_scriptures.py --lang ita --force-scrape   # re-scrape even if JSON exists
+    python scripts/ingest_scriptures.py --lang eng                  # download + ingest
 """
 
 import argparse
@@ -23,7 +31,7 @@ from bs4 import BeautifulSoup
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from rag.chunker import chunk_text, chunk_verses
+from rag.chunker import chunk_verses
 from rag.embedder import Embedder
 from rag.schemas import SourceType
 from rag.vector_store import VectorStore
@@ -31,7 +39,17 @@ from rag.vector_store import VectorStore
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-# bcbooks JSON (English only — has verse-level structure)
+# ──────────────────────────────────────────────────────────────────────────────
+# Paths
+# ──────────────────────────────────────────────────────────────────────────────
+
+PROJECT_ROOT = Path(__file__).parent.parent
+JSON_DIR = PROJECT_ROOT / "data" / "scriptures-json"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# English: download from bcbooks
+# ──────────────────────────────────────────────────────────────────────────────
+
 ENG_JSON_URLS = {
     "book-of-mormon": "https://raw.githubusercontent.com/bcbooks/scriptures-json/master/book-of-mormon.json",
     "doctrine-and-covenants": "https://raw.githubusercontent.com/bcbooks/scriptures-json/master/doctrine-and-covenants.json",
@@ -40,76 +58,242 @@ ENG_JSON_URLS = {
     "new-testament": "https://raw.githubusercontent.com/bcbooks/scriptures-json/master/new-testament.json",
 }
 
-# Church website scripture volumes and their book slugs
-CHURCH_BASE = "https://www.churchofjesuschrist.org"
-HEADERS = {"User-Agent": "LDS-RAG-Ingestion/1.0"}
 
-# Volume → list of (book_slug, display_name, chapter_count)
-VOLUMES = {
-    "bofm": [
-        ("1-ne", "1 Nefi", 22), ("2-ne", "2 Nefi", 33), ("jacob", "Giacobbe", 7),
-        ("enos", "Enos", 1), ("jarom", "Jarom", 1), ("omni", "Omni", 1),
-        ("w-of-m", "Parole di Mormon", 1), ("mosiah", "Mosia", 29),
-        ("alma", "Alma", 63), ("hel", "Helaman", 16), ("3-ne", "3 Nefi", 30),
-        ("4-ne", "4 Nefi", 1), ("morm", "Mormon", 9), ("ether", "Ether", 15),
-        ("moro", "Moroni", 10),
-    ],
-    "dc-testament": [
-        ("dc", "DeA", 138),
-    ],
-    "pgp": [
-        ("moses", "Mosè", 8), ("abr", "Abrahamo", 5),
-        ("js-m", "Joseph Smith—Matteo", 1), ("js-h", "Joseph Smith—Storia", 1),
-        ("a-of-f", "Articoli di Fede", 1),
-    ],
-    # Old/New Testament are very large; include key books only for manageable size
-    "ot": [
-        ("gen", "Genesi", 50), ("ex", "Esodo", 40), ("deut", "Deuteronomio", 34),
-        ("josh", "Giosuè", 24), ("judg", "Giudici", 21),
-        ("1-sam", "1 Samuele", 31), ("2-sam", "2 Samuele", 24),
-        ("1-kgs", "1 Re", 22), ("2-kgs", "2 Re", 25),
-        ("ps", "Salmi", 150), ("prov", "Proverbi", 31),
-        ("eccl", "Ecclesiaste", 12), ("isa", "Isaia", 66),
-        ("jer", "Geremia", 52), ("ezek", "Ezechiele", 48),
-        ("dan", "Daniele", 12), ("amos", "Amos", 9), ("micah", "Michea", 7),
-        ("mal", "Malachia", 4),
-    ],
-    "nt": [
-        ("matt", "Matteo", 28), ("mark", "Marco", 16), ("luke", "Luca", 24),
-        ("john", "Giovanni", 21), ("acts", "Atti", 28), ("rom", "Romani", 16),
-        ("1-cor", "1 Corinzi", 16), ("2-cor", "2 Corinzi", 13),
-        ("gal", "Galati", 6), ("eph", "Efesini", 6), ("philip", "Filippesi", 4),
-        ("col", "Colossesi", 4), ("1-thes", "1 Tessalonicesi", 5),
-        ("2-thes", "2 Tessalonicesi", 3), ("1-tim", "1 Timoteo", 6),
-        ("2-tim", "2 Timoteo", 4), ("titus", "Tito", 3),
-        ("heb", "Ebrei", 13), ("james", "Giacomo", 5),
-        ("1-pet", "1 Pietro", 5), ("2-pet", "2 Pietro", 3),
-        ("1-jn", "1 Giovanni", 5), ("rev", "Apocalisse", 22),
-    ],
-}
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# English: download JSON from bcbooks
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-def ingest_english_json() -> list[dict]:
-    """Download English scriptures from bcbooks/scriptures-json and chunk."""
-    all_chunks = []
+def download_english(force: bool = False) -> list[Path]:
+    """Download English JSON from bcbooks if not already cached."""
+    out_dir = JSON_DIR / "eng"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    paths = []
 
     for volume_slug, url in ENG_JSON_URLS.items():
+        out_path = out_dir / f"{volume_slug}.json"
+        if out_path.exists() and not force:
+            logger.info(f"  {volume_slug}.json already exists, skipping (use --force-scrape to re-download)")
+            paths.append(out_path)
+            continue
+
         logger.info(f"Downloading {volume_slug}...")
         resp = requests.get(url, timeout=60)
         resp.raise_for_status()
-        data = resp.json()
+        out_path.write_text(json.dumps(resp.json(), ensure_ascii=False, indent=2), encoding="utf-8")
+        logger.info(f"  Saved {out_path}")
+        paths.append(out_path)
 
+    return paths
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Italian: scrape from churchofjesuschrist.org → save as bcbooks-format JSON
+# ──────────────────────────────────────────────────────────────────────────────
+
+CHURCH_BASE = "https://www.churchofjesuschrist.org"
+HEADERS = {"User-Agent": "LDS-RAG-Ingestion/1.0"}
+
+# Volume slug on church site → (json filename, title, list of books)
+# Each book: (url_slug, display_name, num_chapters)
+VOLUME_DEFS = {
+    "bofm": {
+        "file": "book-of-mormon.json",
+        "title": "Il Libro di Mormon",
+        "books": [
+            ("1-ne", "1 Nefi", 22), ("2-ne", "2 Nefi", 33), ("jacob", "Giacobbe", 7),
+            ("enos", "Enos", 1), ("jarom", "Jarom", 1), ("omni", "Omni", 1),
+            ("w-of-m", "Parole di Mormon", 1), ("mosiah", "Mosia", 29),
+            ("alma", "Alma", 63), ("hel", "Helaman", 16), ("3-ne", "3 Nefi", 30),
+            ("4-ne", "4 Nefi", 1), ("morm", "Mormon", 9), ("ether", "Ether", 15),
+            ("moro", "Moroni", 10),
+        ],
+    },
+    "dc-testament": {
+        "file": "doctrine-and-covenants.json",
+        "title": "Dottrina e Alleanze",
+        "books": [
+            ("dc", "Dottrina e Alleanze", 138),
+        ],
+    },
+    "pgp": {
+        "file": "pearl-of-great-price.json",
+        "title": "Perla di Gran Prezzo",
+        "books": [
+            ("moses", "Mosè", 8), ("abr", "Abrahamo", 5),
+            ("js-m", "Joseph Smith—Matteo", 1), ("js-h", "Joseph Smith—Storia", 1),
+            ("a-of-f", "Articoli di Fede", 1),
+        ],
+    },
+    "ot": {
+        "file": "old-testament.json",
+        "title": "Vecchio Testamento",
+        "books": [
+            ("gen", "Genesi", 50), ("ex", "Esodo", 40), ("lev", "Levitico", 27),
+            ("num", "Numeri", 36), ("deut", "Deuteronomio", 34),
+            ("josh", "Giosuè", 24), ("judg", "Giudici", 21),
+            ("ruth", "Rut", 4), ("1-sam", "1 Samuele", 31), ("2-sam", "2 Samuele", 24),
+            ("1-kgs", "1 Re", 22), ("2-kgs", "2 Re", 25),
+            ("1-chr", "1 Cronache", 29), ("2-chr", "2 Cronache", 36),
+            ("ezra", "Esdra", 10), ("neh", "Neemia", 13),
+            ("esth", "Ester", 10), ("job", "Giobbe", 42),
+            ("ps", "Salmi", 150), ("prov", "Proverbi", 31),
+            ("eccl", "Ecclesiaste", 12), ("song", "Cantico dei Cantici", 8),
+            ("isa", "Isaia", 66), ("jer", "Geremia", 52),
+            ("lam", "Lamentazioni", 5), ("ezek", "Ezechiele", 48),
+            ("dan", "Daniele", 12), ("hosea", "Osea", 14),
+            ("joel", "Gioele", 3), ("amos", "Amos", 9),
+            ("obad", "Abdia", 1), ("jonah", "Giona", 4),
+            ("micah", "Michea", 7), ("nahum", "Naum", 3),
+            ("hab", "Abacuc", 3), ("zeph", "Sofonia", 3),
+            ("hag", "Aggeo", 2), ("zech", "Zaccaria", 14),
+            ("mal", "Malachia", 4),
+        ],
+    },
+    "nt": {
+        "file": "new-testament.json",
+        "title": "Nuovo Testamento",
+        "books": [
+            ("matt", "Matteo", 28), ("mark", "Marco", 16), ("luke", "Luca", 24),
+            ("john", "Giovanni", 21), ("acts", "Atti", 28), ("rom", "Romani", 16),
+            ("1-cor", "1 Corinzi", 16), ("2-cor", "2 Corinzi", 13),
+            ("gal", "Galati", 6), ("eph", "Efesini", 6), ("philip", "Filippesi", 4),
+            ("col", "Colossesi", 4), ("1-thes", "1 Tessalonicesi", 5),
+            ("2-thes", "2 Tessalonicesi", 3), ("1-tim", "1 Timoteo", 6),
+            ("2-tim", "2 Timoteo", 4), ("titus", "Tito", 3),
+            ("philem", "Filemone", 1), ("heb", "Ebrei", 13),
+            ("james", "Giacomo", 5), ("1-pet", "1 Pietro", 5),
+            ("2-pet", "2 Pietro", 3), ("1-jn", "1 Giovanni", 5),
+            ("2-jn", "2 Giovanni", 1), ("3-jn", "3 Giovanni", 1),
+            ("jude", "Giuda", 1), ("rev", "Apocalisse", 22),
+        ],
+    },
+}
+
+
+def scrape_chapter_verses(volume_slug: str, book_slug: str, chapter: int, lang: str) -> list[dict]:
+    """Scrape a single chapter and return a list of {verse, text, reference} dicts."""
+    url = f"{CHURCH_BASE}/study/scriptures/{volume_slug}/{book_slug}/{chapter}?lang={lang}"
+
+    try:
+        resp = requests.get(url, timeout=30, headers=HEADERS)
+        resp.raise_for_status()
+    except requests.RequestException as e:
+        logger.warning(f"  Failed {url}: {e}")
+        return []
+
+    soup = BeautifulSoup(resp.text, "html.parser")
+    verses = []
+
+    # Try verse-marked elements first
+    verse_elements = soup.select("[class*='verse']")
+    if verse_elements:
+        for el in verse_elements:
+            num_el = el.select_one("[class*='verse-number']")
+            if num_el:
+                try:
+                    verse_num = int(re.search(r"\d+", num_el.get_text()).group())
+                except (AttributeError, ValueError):
+                    verse_num = len(verses) + 1
+                text = el.get_text(separator=" ", strip=True)
+                text = re.sub(r"^\d+\s*", "", text)
+            else:
+                verse_num = len(verses) + 1
+                text = el.get_text(separator=" ", strip=True)
+
+            if text and len(text) > 5:
+                verses.append({"verse": verse_num, "text": text})
+    else:
+        # Fallback: extract body paragraphs
+        body = soup.select_one("article") or soup.select_one(".body-block") or soup.select_one("main")
+        if body:
+            for el in body.select("footer, nav, .footnote, header"):
+                el.decompose()
+            paragraphs = body.find_all("p")
+            for i, p in enumerate(paragraphs, 1):
+                text = p.get_text(separator=" ", strip=True)
+                if text and len(text) > 10:
+                    verses.append({"verse": i, "text": text})
+
+    return verses
+
+
+def scrape_and_save_volume(volume_slug: str, vol_def: dict, lang: str, out_dir: Path) -> Path:
+    """Scrape one volume and save as a bcbooks-format JSON file."""
+    out_path = out_dir / vol_def["file"]
+
+    volume_data = {
+        "title": vol_def["title"],
+        "lds_slug": volume_slug,
+        "language": lang,
+        "books": [],
+    }
+
+    for book_slug, book_name, num_chapters in vol_def["books"]:
+        logger.info(f"  {book_name} ({num_chapters} ch)...")
+        book_data = {
+            "book": book_name,
+            "lds_slug": book_slug,
+            "full_title": book_name,
+            "chapters": [],
+        }
+
+        for ch in range(1, num_chapters + 1):
+            time.sleep(0.5)  # Rate limiting: 2 req/sec
+            verses = scrape_chapter_verses(volume_slug, book_slug, ch, lang)
+
+            if not verses:
+                logger.warning(f"    Chapter {ch}: no verses found")
+                continue
+
+            # Add reference field to each verse (bcbooks compat)
+            for v in verses:
+                v["reference"] = f"{book_name} {ch}:{v['verse']}"
+
+            book_data["chapters"].append({
+                "chapter": ch,
+                "reference": f"{book_name} {ch}",
+                "verses": verses,
+            })
+
+        volume_data["books"].append(book_data)
+
+    out_path.write_text(json.dumps(volume_data, ensure_ascii=False, indent=2), encoding="utf-8")
+    logger.info(f"  Saved → {out_path}")
+    return out_path
+
+
+def scrape_italian(force: bool = False) -> list[Path]:
+    """Scrape all Italian volumes, saving each as JSON. Skip if already exists."""
+    out_dir = JSON_DIR / "ita"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    paths = []
+
+    for volume_slug, vol_def in VOLUME_DEFS.items():
+        out_path = out_dir / vol_def["file"]
+        if out_path.exists() and not force:
+            logger.info(f"  {vol_def['file']} already exists, skipping (use --force-scrape to re-scrape)")
+            paths.append(out_path)
+            continue
+
+        logger.info(f"Scraping {vol_def['title']}...")
+        paths.append(scrape_and_save_volume(volume_slug, vol_def, "ita", out_dir))
+
+    return paths
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# JSON → RAG chunks (shared for both languages)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def json_to_chunks(json_paths: list[Path], lang: str) -> list[dict]:
+    """Read bcbooks-format JSON files and produce RAG chunks."""
+    all_chunks = []
+
+    for path in json_paths:
+        data = json.loads(path.read_text(encoding="utf-8"))
         books = data.get("books", [])
-        for book in books:
-            book_name = book.get("book", book.get("full_title", volume_slug))
-            chapters = book.get("chapters", [])
 
-            for chapter in chapters:
+        for book in books:
+            book_name = book.get("book", book.get("full_title", path.stem))
+
+            for chapter in book.get("chapters", []):
                 chapter_num = chapter.get("chapter", 0)
                 verses = chapter.get("verses", [])
                 if not verses:
@@ -119,7 +303,7 @@ def ingest_english_json() -> list[dict]:
 
                 for vc in verse_chunks:
                     verse_range = f"{vc['verse_start']}-{vc['verse_end']}"
-                    chunk_id = f"scriptures-eng-{book_name}-{chapter_num}-{verse_range}"
+                    chunk_id = f"scriptures-{lang}-{book_name}-{chapter_num}-{verse_range}"
                     chunk_id = re.sub(r"[^a-z0-9_-]", "", chunk_id.replace(" ", "_").lower())
 
                     all_chunks.append({
@@ -131,119 +315,9 @@ def ingest_english_json() -> list[dict]:
                             "book": book_name,
                             "chapter": chapter_num,
                             "verse": verse_range,
-                            "language": "eng",
+                            "language": lang,
                         },
                     })
-
-    return all_chunks
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Italian (and other languages): scrape from churchofjesuschrist.org
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-def scrape_chapter(volume_slug: str, book_slug: str, chapter: int, lang: str) -> list[dict]:
-    """Scrape a single chapter and extract verses."""
-    url = f"{CHURCH_BASE}/study/scriptures/{volume_slug}/{book_slug}/{chapter}?lang={lang}"
-
-    try:
-        resp = requests.get(url, timeout=30, headers=HEADERS)
-        resp.raise_for_status()
-    except requests.RequestException as e:
-        logger.warning(f"Failed to fetch {url}: {e}")
-        return []
-
-    soup = BeautifulSoup(resp.text, "html.parser")
-
-    verses = []
-    # The Church site marks verses with <p class="verse" id="p...">
-    # or <span class="verse-number"> followed by text
-    verse_elements = soup.select("[class*='verse']")
-
-    if verse_elements:
-        for el in verse_elements:
-            # Try to extract verse number
-            num_el = el.select_one("[class*='verse-number']")
-            if num_el:
-                try:
-                    verse_num = int(re.search(r"\d+", num_el.get_text()).group())
-                except (AttributeError, ValueError):
-                    verse_num = len(verses) + 1
-                text = el.get_text(separator=" ", strip=True)
-                # Remove the verse number from the beginning
-                text = re.sub(r"^\d+\s*", "", text)
-            else:
-                verse_num = len(verses) + 1
-                text = el.get_text(separator=" ", strip=True)
-
-            if text and len(text) > 5:
-                verses.append({"verse": verse_num, "text": text})
-    else:
-        # Fallback: get the whole body and chunk as plain text
-        body = soup.select_one("article") or soup.select_one(".body-block") or soup.select_one("main")
-        if body:
-            for el in body.select("footer, nav, .footnote, header"):
-                el.decompose()
-            text = body.get_text(separator=" ", strip=True)
-            if len(text) > 50:
-                verses.append({"verse": 1, "text": text})
-
-    return verses
-
-
-def ingest_scraped(lang: str) -> list[dict]:
-    """Scrape scriptures from churchofjesuschrist.org and chunk."""
-    all_chunks = []
-
-    for volume_slug, books in VOLUMES.items():
-        for book_slug, book_name, num_chapters in books:
-            logger.info(f"Scraping {book_name} ({num_chapters} chapters)...")
-
-            for ch in range(1, num_chapters + 1):
-                time.sleep(0.5)  # Rate limiting
-                verses = scrape_chapter(volume_slug, book_slug, ch, lang)
-
-                if not verses:
-                    continue
-
-                if len(verses) == 1 and verses[0]["verse"] == 1:
-                    # Fallback: whole chapter as plain text, use text chunker
-                    text_chunks = chunk_text(verses[0]["text"], max_tokens=400, overlap_tokens=50)
-                    for i, ct in enumerate(text_chunks):
-                        chunk_id = f"scriptures-{lang}-{book_name}-{ch}-chunk{i}"
-                        chunk_id = re.sub(r"[^a-z0-9_-]", "", chunk_id.replace(" ", "_").lower())
-                        all_chunks.append({
-                            "id": chunk_id,
-                            "text": ct,
-                            "metadata": {
-                                "text": ct,
-                                "source": SourceType.SCRIPTURES.value,
-                                "book": book_name,
-                                "chapter": ch,
-                                "verse": f"chunk-{i}",
-                                "language": lang,
-                            },
-                        })
-                else:
-                    # Verse-level: group verses
-                    verse_chunks = chunk_verses(verses, group_size=4, max_tokens=400)
-                    for vc in verse_chunks:
-                        verse_range = f"{vc['verse_start']}-{vc['verse_end']}"
-                        chunk_id = f"scriptures-{lang}-{book_name}-{ch}-{verse_range}"
-                        chunk_id = re.sub(r"[^a-z0-9_-]", "", chunk_id.replace(" ", "_").lower())
-                        all_chunks.append({
-                            "id": chunk_id,
-                            "text": vc["text"],
-                            "metadata": {
-                                "text": vc["text"],
-                                "source": SourceType.SCRIPTURES.value,
-                                "book": book_name,
-                                "chapter": ch,
-                                "verse": verse_range,
-                                "language": lang,
-                            },
-                        })
 
     return all_chunks
 
@@ -257,23 +331,37 @@ def main():
     parser = argparse.ArgumentParser(description="Ingest scriptures into RAG vector store")
     parser.add_argument("--lang", choices=["ita", "eng"], default="ita", help="Language")
     parser.add_argument("--dry-run", action="store_true", help="Report stats without embedding/upserting")
+    parser.add_argument("--scrape-only", action="store_true", help="Only scrape and save JSON, no embedding")
+    parser.add_argument("--force-scrape", action="store_true", help="Re-scrape/download even if JSON exists")
     args = parser.parse_args()
 
-    # Collect chunks
+    # Step 1: Get JSON files (download or scrape)
     if args.lang == "eng":
-        logger.info("Using bcbooks/scriptures-json for English...")
-        chunks = ingest_english_json()
+        logger.info("Getting English JSON from bcbooks/scriptures-json...")
+        json_paths = download_english(force=args.force_scrape)
     else:
-        logger.info(f"Scraping scriptures from churchofjesuschrist.org ({args.lang})...")
-        chunks = ingest_scraped(args.lang)
+        logger.info("Getting Italian JSON (scraping from churchofjesuschrist.org)...")
+        json_paths = scrape_italian(force=args.force_scrape)
 
-    logger.info(f"Extracted {len(chunks)} chunks")
+    if args.scrape_only:
+        print(f"\nJSON files saved to: {JSON_DIR / args.lang}/")
+        for p in json_paths:
+            size_kb = p.stat().st_size / 1024
+            print(f"  {p.name} ({size_kb:.0f} KB)")
+        print("\nThese files match the bcbooks/scriptures-json format.")
+        print("You can publish them as a standalone Italian scriptures dataset.")
+        return
+
+    # Step 2: Convert JSON → chunks
+    chunks = json_to_chunks(json_paths, args.lang)
+    logger.info(f"Extracted {len(chunks)} chunks from {len(json_paths)} volumes")
 
     if args.dry_run:
         total_chars = sum(len(c["text"]) for c in chunks)
         est_tokens = total_chars / 4
         print(f"\n--- Dry Run Report ---")
         print(f"Language: {args.lang}")
+        print(f"JSON dir: {JSON_DIR / args.lang}")
         print(f"Total chunks: {len(chunks)}")
         print(f"Total characters: {total_chars:,}")
         print(f"Estimated tokens: {est_tokens:,.0f}")
@@ -284,7 +372,7 @@ def main():
             print(f"  Text: {chunks[0]['text'][:200]}...")
         return
 
-    # Embed
+    # Step 3: Embed
     embedder = Embedder()
     logger.info("Embedding chunks...")
 
@@ -296,7 +384,7 @@ def main():
         all_embeddings.extend(batch_embs)
         logger.info(f"  Embedded {min(i + batch_size, len(chunks))}/{len(chunks)}")
 
-    # Upsert
+    # Step 4: Upsert to Pinecone
     store = VectorStore()
     ids = [c["id"] for c in chunks]
     metadata = [c["metadata"] for c in chunks]
