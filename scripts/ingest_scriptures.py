@@ -11,11 +11,15 @@ you only need to scrape once — reusable as a standalone dataset.
 Saved to: data/scriptures-json/<lang>/<volume>.json
 
 Usage:
-    python scripts/ingest_scriptures.py --lang ita                  # scrape + ingest
-    python scripts/ingest_scriptures.py --lang spa --scrape-only    # scrape Spanish, save JSON only
-    python scripts/ingest_scriptures.py --lang ita --dry-run        # scrape + report stats
-    python scripts/ingest_scriptures.py --lang ita --force-scrape   # re-scrape even if JSON exists
-    python scripts/ingest_scriptures.py --lang eng                  # download from bcbooks + ingest
+    python scripts/ingest_scriptures.py --lang ita                        # all volumes
+    python scripts/ingest_scriptures.py --lang ita --volumes ot nt        # only OT + NT
+    python scripts/ingest_scriptures.py --lang ita --volumes bofm         # only Book of Mormon
+    python scripts/ingest_scriptures.py --lang spa --scrape-only          # scrape Spanish, JSON only
+    python scripts/ingest_scriptures.py --lang ita --dry-run              # report stats
+    python scripts/ingest_scriptures.py --lang ita --force-scrape         # re-scrape even if cached
+    python scripts/ingest_scriptures.py --lang eng                        # download from bcbooks
+
+Volume keys: bofm, dc-testament, pgp, ot, nt
 """
 
 import argparse
@@ -50,29 +54,33 @@ JSON_DIR = PROJECT_ROOT / "data" / "scriptures-json"
 # English: download from bcbooks
 # ──────────────────────────────────────────────────────────────────────────────
 
-ENG_JSON_URLS = {
-    "book-of-mormon": "https://raw.githubusercontent.com/bcbooks/scriptures-json/master/book-of-mormon.json",
-    "doctrine-and-covenants": "https://raw.githubusercontent.com/bcbooks/scriptures-json/master/doctrine-and-covenants.json",
-    "pearl-of-great-price": "https://raw.githubusercontent.com/bcbooks/scriptures-json/master/pearl-of-great-price.json",
-    "old-testament": "https://raw.githubusercontent.com/bcbooks/scriptures-json/master/old-testament.json",
-    "new-testament": "https://raw.githubusercontent.com/bcbooks/scriptures-json/master/new-testament.json",
+# Maps short key → (json filename, bcbooks download URL)
+ENG_VOLUMES = {
+    "bofm": ("book-of-mormon.json", "https://raw.githubusercontent.com/bcbooks/scriptures-json/master/book-of-mormon.json"),
+    "dc-testament": ("doctrine-and-covenants.json", "https://raw.githubusercontent.com/bcbooks/scriptures-json/master/doctrine-and-covenants.json"),
+    "pgp": ("pearl-of-great-price.json", "https://raw.githubusercontent.com/bcbooks/scriptures-json/master/pearl-of-great-price.json"),
+    "ot": ("old-testament.json", "https://raw.githubusercontent.com/bcbooks/scriptures-json/master/old-testament.json"),
+    "nt": ("new-testament.json", "https://raw.githubusercontent.com/bcbooks/scriptures-json/master/new-testament.json"),
 }
 
+ALL_VOLUME_KEYS = list(ENG_VOLUMES.keys())  # bofm, dc-testament, pgp, ot, nt
 
-def download_english(force: bool = False) -> list[Path]:
+
+def download_english(volumes: list[str], force: bool = False) -> list[Path]:
     """Download English JSON from bcbooks if not already cached."""
     out_dir = JSON_DIR / "eng"
     out_dir.mkdir(parents=True, exist_ok=True)
     paths = []
 
-    for volume_slug, url in ENG_JSON_URLS.items():
-        out_path = out_dir / f"{volume_slug}.json"
+    for key in volumes:
+        filename, url = ENG_VOLUMES[key]
+        out_path = out_dir / filename
         if out_path.exists() and not force:
-            logger.info(f"  {volume_slug}.json already exists, skipping (use --force-scrape to re-download)")
+            logger.info(f"  {filename} already exists, skipping (use --force-scrape to re-download)")
             paths.append(out_path)
             continue
 
-        logger.info(f"Downloading {volume_slug}...")
+        logger.info(f"Downloading {filename}...")
         resp = requests.get(url, timeout=60)
         resp.raise_for_status()
         out_path.write_text(json.dumps(resp.json(), ensure_ascii=False, indent=2), encoding="utf-8")
@@ -278,13 +286,14 @@ def scrape_and_save_volume(volume_slug: str, vol_def: dict, lang: str, out_dir: 
     return out_path
 
 
-def scrape_language(lang: str, force: bool = False) -> list[Path]:
-    """Scrape all volumes for *lang*, saving each as JSON. Skip if already exists."""
+def scrape_language(lang: str, volumes: list[str], force: bool = False) -> list[Path]:
+    """Scrape selected volumes for *lang*, saving each as JSON. Skip if already exists."""
     out_dir = JSON_DIR / lang
     out_dir.mkdir(parents=True, exist_ok=True)
     paths = []
 
-    for volume_slug, vol_def in VOLUME_DEFS.items():
+    for key in volumes:
+        vol_def = VOLUME_DEFS[key]
         out_path = out_dir / vol_def["file"]
         if out_path.exists() and not force:
             logger.info(f"  {vol_def['file']} already exists, skipping (use --force-scrape to re-scrape)")
@@ -292,7 +301,7 @@ def scrape_language(lang: str, force: bool = False) -> list[Path]:
             continue
 
         logger.info(f"Scraping {vol_def['title']} ({lang})...")
-        paths.append(scrape_and_save_volume(volume_slug, vol_def, lang, out_dir))
+        paths.append(scrape_and_save_volume(key, vol_def, lang, out_dir))
 
     return paths
 
@@ -350,18 +359,22 @@ def json_to_chunks(json_paths: list[Path], lang: str) -> list[dict]:
 def main():
     parser = argparse.ArgumentParser(description="Ingest scriptures into RAG vector store")
     parser.add_argument("--lang", default="ita", help="Language code (e.g. ita, eng, spa, por, fra, deu)")
+    parser.add_argument("--volumes", nargs="+", choices=ALL_VOLUME_KEYS, default=None,
+                        help="Volumes to process (default: all). Choices: bofm, dc-testament, pgp, ot, nt")
     parser.add_argument("--dry-run", action="store_true", help="Report stats without embedding/upserting")
     parser.add_argument("--scrape-only", action="store_true", help="Only scrape and save JSON, no embedding")
     parser.add_argument("--force-scrape", action="store_true", help="Re-scrape/download even if JSON exists")
     args = parser.parse_args()
 
+    volumes = args.volumes or ALL_VOLUME_KEYS
+
     # Step 1: Get JSON files (download or scrape)
     if args.lang == "eng":
         logger.info("Getting English JSON from bcbooks/scriptures-json...")
-        json_paths = download_english(force=args.force_scrape)
+        json_paths = download_english(volumes, force=args.force_scrape)
     else:
         logger.info(f"Getting {args.lang} JSON (scraping from churchofjesuschrist.org)...")
-        json_paths = scrape_language(args.lang, force=args.force_scrape)
+        json_paths = scrape_language(args.lang, volumes, force=args.force_scrape)
 
     if args.scrape_only:
         print(f"\nJSON files saved to: {JSON_DIR / args.lang}/")
