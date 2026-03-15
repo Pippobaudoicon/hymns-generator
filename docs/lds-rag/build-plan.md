@@ -76,12 +76,25 @@ Goal: usable web interface.
 | Embeddings | sentence-transformers multilingual | Local, free, Italian+English support |
 | LLM | Claude claude-sonnet-4-6 | Best reasoning, citation quality |
 | Project location | Module inside hymns-generator repo | Reuse auth, infra, deployment |
-| Scraping scope | Italian + English, 2000+ for conference | Multilingual audience |
+| Scraping scope | Italian only, 2015+ for conference | VPS disk/RAM constraint |
+| Liahona | Skip initially | Lowest priority; saves ~12–100 MB |
+| Ingestion location | Run locally, upload ChromaDB to VPS | Avoid OOM during embedding on small VPS |
+
+## Constraints
+
+**The server is a small VPS with very limited disk and RAM.** This is not an open question —
+it is a hard constraint that shapes all decisions:
+
+- Ingest Italian only to start (cuts storage ~50%)
+- Skip Liahona initially (lowest value/MB ratio)
+- Conference talks from 2015+ only
+- Target: ~135 MB total ChromaDB storage (see `data-sources.md`)
+- Load sentence-transformers model lazily, not at app startup
+- Do not load all ChromaDB collections at startup — open on demand
 
 ## Open questions (resolve before/during implementation)
 
 1. **Anthropic API key** — does the user have one? Needed for Phase 1.
-2. **Languages to ingest** — Italian + English both, or start with one?
-3. **Disk budget** — server storage available? Affects scope of ingestion (see `data-sources.md`).
-4. **Auth on RAG routes** — public access or require login?
-5. **Conference year range** — 2000+ or more/less?
+2. **Auth on RAG routes** — public access or require login?
+3. **Ingestion machine** — run ingestion scripts locally then upload ChromaDB, or run on VPS?
+   Running on VPS risks OOM during embedding; running locally is safer.

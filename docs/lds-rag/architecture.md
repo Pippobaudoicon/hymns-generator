@@ -28,6 +28,9 @@ Response with answer + cited sources
 - Supports Italian + English natively (trained on 50+ languages)
 - Runs locally via `sentence-transformers` — no API cost per embedding
 - **Why not OpenAI embeddings**: adds dependency + cost; local is fine at this scale
+- **VPS constraint**: model (~420 MB) is loaded once at startup and kept in RAM.
+  On a low-memory VPS this is significant — consider lazy loading or using the
+  Anthropic Embeddings API instead if RAM is the bottleneck (trades cost for memory)
 
 ### LLM: Claude claude-sonnet-4-6 (Anthropic API)
 - Used only for answer generation and content generation (not for embeddings)
@@ -83,3 +86,17 @@ ANTHROPIC_API_KEY=sk-ant-...
 CHROMA_DB_PATH=data/chromadb        # default
 RAG_COLLECTION_LANGUAGES=ita,eng    # which language versions to ingest
 ```
+
+## VPS constraints (critical)
+
+The server is a low-spec VPS with limited disk and RAM. Every design decision must account for this.
+
+| Resource | Concern | Mitigation |
+|---|---|---|
+| Disk | ChromaDB can reach 500MB+ at full scope | Ingest only Italian, recent years only (see data-sources.md) |
+| RAM | sentence-transformers model ~420 MB | Load model lazily (only on first request), unload if idle |
+| CPU | Embedding large batches is slow on no-GPU | Ingest scripts run offline/one-time; query-time embedding is fast (single vector) |
+| RAM (ChromaDB) | Chroma loads index into RAM at startup | Keep collections small; avoid loading all collections if only one is queried |
+
+**Rule of thumb**: ingestion is a one-time offline task — it's okay if it's slow.
+Query-time must be fast and light. Don't load anything at startup that isn't needed per-request.

@@ -96,9 +96,28 @@ python cli.py rag stats
 | General Handbook (both langs) | ~10,000 | ~25 MB |
 | **Total** | **~210,000** | **~525 MB** |
 
-## Open question: disk budget
+## VPS constraint: this is too much
 
-If server disk is limited, reduce scope:
-- Conference talks from 2010+ instead of 2000+
-- Liahona from 2015+ only
-- English only as a first pass, add Italian later
+The server is a small VPS with limited disk and RAM. ~525 MB for ChromaDB alone is likely
+unacceptable. **Use the reduced scope below as the default.**
+
+### Reduced scope (target: ~100 MB total)
+
+| Source | Scope | Chunks (est.) | Size (est.) |
+|---|---|---|---|
+| Scriptures | Italian only | ~30,000 | ~75 MB |
+| Conference talks | Italian only, 2015+ | ~15,000 | ~35 MB |
+| Liahona | Skip entirely or Italian only 2020+ | ~5,000 | ~12 MB |
+| General Handbook | Italian only | ~5,000 | ~12 MB |
+| **Total** | | **~55,000** | **~135 MB** |
+
+English can be added later if disk allows. The Liahona is the lowest-priority source — skip it first.
+
+### Per-ingestion script default flags
+
+```bash
+python scripts/ingest_scriptures.py --lang ita
+python scripts/ingest_conference.py --lang ita --from-year 2015
+python scripts/ingest_handbook.py --lang ita
+# Liahona: skip initially
+```
