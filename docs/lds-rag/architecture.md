@@ -1,41 +1,51 @@
 # LDS RAG Tool — Architecture & Stack
 
+## Design principle
+
+The VPS hosting this app is small. The RAG module must not add meaningful disk, RAM, or CPU
+pressure to it. Solution: outsource all heavy components to free hosted services.
+The VPS stays a thin HTTP routing layer — it only runs FastAPI and makes API calls.
+
 ## High-level flow
 
 ```
 User (rag.html)
     ↓ HTTP
-FastAPI /rag/* routes
+FastAPI /rag/* routes   ← runs on VPS (lightweight, no model, no vector DB)
     ↓
 RAG Pipeline (rag/pipeline.py)
-    ├── 1. Embed query       → embedder.py (sentence-transformers, local)
-    ├── 2. Semantic search   → retriever.py (ChromaDB)
-    └── 3. Generate answer   → generator.py (Claude API)
+    ├── 1. Embed query    → Voyage AI API      (external, free tier)
+    ├── 2. Semantic search → Pinecone API      (external, free tier)
+    └── 3. Generate answer → Anthropic API     (external, pay-per-token)
     ↓
 Response with answer + cited sources
 ```
 
 ## Component choices
 
-### Vector DB: ChromaDB (embedded)
-- Runs in-process, no extra service to manage
-- Persists to disk (e.g. `data/chromadb/`)
-- One collection per source: `scriptures`, `conference`, `liahona`, `handbook`
-- **Why not Pinecone/Supabase pgvector**: overkill for a small tool; ChromaDB is simpler and free
+### Embeddings: Voyage AI (`voyage-multilingual-2`)
+- **Free tier**: 200M tokens/month — far more than needed
+- Natively multilingual (Italian + English and many more)
+- State-of-the-art retrieval quality, better than MiniLM
+- Pure API call — **zero RAM, zero disk on VPS**
+- Dimension: 1024
+- **Why not local sentence-transformers**: ~420 MB model in RAM, unacceptable on small VPS
+- **Why not OpenAI/Cohere embeddings**: Voyage free tier is more generous and quality is better
+- Requires `VOYAGE_API_KEY` in `.env` (free at `voyageai.com`)
 
-### Embeddings: `paraphrase-multilingual-MiniLM-L12-v2`
-- 118M params, 384 dimensions
-- Supports Italian + English natively (trained on 50+ languages)
-- Runs locally via `sentence-transformers` — no API cost per embedding
-- **Why not OpenAI embeddings**: adds dependency + cost; local is fine at this scale
-- **VPS constraint**: model (~420 MB) is loaded once at startup and kept in RAM.
-  On a low-memory VPS this is significant — consider lazy loading or using the
-  Anthropic Embeddings API instead if RAM is the bottleneck (trades cost for memory)
+### Vector DB: Pinecone (serverless free tier)
+- **Free tier**: 2 GB storage, 1 index — enough for full Italian corpus
+- Serverless: no always-on pod, billed per query (well within free tier)
+- Pure API — **zero disk on VPS**
+- One namespace per source: `scriptures`, `conference`, `handbook`, `liahona`
+- **Why not ChromaDB on disk**: adds 100–500 MB to VPS disk, loads into RAM at startup
+- **Why not Supabase pgvector**: requires schema changes to existing DB; Pinecone is purpose-built
+- Requires `PINECONE_API_KEY` in `.env` (free at `pinecone.io`)
 
-### LLM: Claude claude-sonnet-4-6 (Anthropic API)
-- Used only for answer generation and content generation (not for embeddings)
+### LLM: Claude claude-haiku-4-5 (Anthropic API)
+- Used only for answer generation — only external cost in the stack
+- Haiku is fast and cheap; upgrade to Sonnet for better quality if needed
 - System prompt instructs to cite sources and stay grounded in retrieved context
-- **Model ID**: `claude-sonnet-4-6`
 - Requires `ANTHROPIC_API_KEY` in `.env`
 
 ## Module structure
@@ -43,12 +53,12 @@ Response with answer + cited sources
 ```
 rag/
 ├── __init__.py
-├── vector_store.py     # ChromaDB wrapper — init, add, query collections
-├── embedder.py         # Load sentence-transformers model, embed text
-├── retriever.py        # Semantic search: query → top-K chunks with metadata
-├── generator.py        # Claude API call: context + query → answer + sources
-├── pipeline.py         # Orchestrates: embed → retrieve → generate
-└── schemas.py          # Pydantic models: RAGQuery, RAGResult, SearchResult
+├── schemas.py          # Pydantic models: RAGQuery, RAGResult, SearchResult, SourceChunk
+├── embedder.py         # Voyage AI API wrapper — embed(texts) → list[vector]
+├── vector_store.py     # Pinecone wrapper — upsert_chunks(), query()
+├── retriever.py        # search(query, namespace, lang, top_k) → list[SourceChunk]
+├── generator.py        # Claude API call: context + query → RAGResult
+└── pipeline.py         # ask(query, lang, sources) orchestrating all above
 
 api/routes/
 └── rag.py              # FastAPI router, registered in app.py
@@ -56,47 +66,57 @@ api/routes/
 scripts/
 ├── ingest_scriptures.py
 ├── ingest_conference.py
-├── ingest_liahona.py
-└── ingest_handbook.py
+├── ingest_handbook.py
+└── ingest_liahona.py   # optional, low priority
 
 static/
 └── rag.html            # Chat/search UI (vanilla JS, matches existing style)
-
-data/
-└── chromadb/           # ChromaDB persistent storage (gitignored)
 ```
+
+No `data/` folder needed — nothing stored on disk.
 
 ## Chunking strategy
 
 - Chunk size: ~400 tokens with 50-token overlap
-- Metadata stored per chunk: `source`, `book/volume`, `chapter`, `verse` (scriptures),
-  `speaker`, `title`, `date`, `url` (talks/articles), `section` (handbook), `language`
-- Language stored as metadata to allow language-filtered search
+- Metadata stored per chunk (in Pinecone): `source`, `book`, `chapter`, `verse` (scriptures),
+  `speaker`, `title`, `date`, `url` (talks), `section` (handbook), `language`
+- Namespace per source allows filtered retrieval without metadata overhead
 
 ## RAG answer format
 
-Every answer from the generator includes:
-- The answer text (in the user's query language)
+Every answer includes:
+- Answer text (in the user's query language)
 - List of source citations: title, author/book, URL if available
 
 ## Environment variables needed
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...
-CHROMA_DB_PATH=data/chromadb        # default
-RAG_COLLECTION_LANGUAGES=ita,eng    # which language versions to ingest
+VOYAGE_API_KEY=...           # voyageai.com — free
+PINECONE_API_KEY=...         # pinecone.io — free
+ANTHROPIC_API_KEY=sk-ant-... # anthropic.com — pay per token
 ```
 
-## VPS constraints (critical)
+No model files, no large data directories. The VPS footprint of this module is just Python code.
 
-The server is a low-spec VPS with limited disk and RAM. Every design decision must account for this.
+## Latency profile
 
-| Resource | Concern | Mitigation |
-|---|---|---|
-| Disk | ChromaDB can reach 500MB+ at full scope | Ingest only Italian, recent years only (see data-sources.md) |
-| RAM | sentence-transformers model ~420 MB | Load model lazily (only on first request), unload if idle |
-| CPU | Embedding large batches is slow on no-GPU | Ingest scripts run offline/one-time; query-time embedding is fast (single vector) |
-| RAM (ChromaDB) | Chroma loads index into RAM at startup | Keep collections small; avoid loading all collections if only one is queried |
+Each query makes 3 serial API calls:
+1. Voyage embed: ~100–200ms
+2. Pinecone query: ~50–150ms
+3. Claude generate: ~500ms–2s (depends on answer length)
 
-**Rule of thumb**: ingestion is a one-time offline task — it's okay if it's slow.
-Query-time must be fast and light. Don't load anything at startup that isn't needed per-request.
+Total: ~1–2.5s per query. Acceptable for a Q&A tool.
+Ingestion (one-time, run locally): batched Voyage embeds + Pinecone upserts, no VPS involvement.
+
+## Ingestion: run locally, not on VPS
+
+Ingestion scripts embed thousands of chunks and upsert to Pinecone.
+This is CPU-heavy and should **not run on the VPS**.
+Run on a dev machine, then it's done — Pinecone stores the results permanently.
+
+```bash
+# Run on dev machine, not on server
+python scripts/ingest_scriptures.py --lang ita
+python scripts/ingest_conference.py --lang ita --from-year 2015
+python scripts/ingest_handbook.py --lang ita
+```

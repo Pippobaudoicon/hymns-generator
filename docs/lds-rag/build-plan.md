@@ -11,15 +11,15 @@
 
 Goal: working RAG pipeline with no data yet (unit-testable).
 
-- [ ] Add dependencies to `requirements.txt`: `chromadb`, `sentence-transformers`, `anthropic`
+- [ ] Add dependencies to `requirements.txt`: `pinecone`, `voyageai`, `anthropic`
 - [ ] `rag/__init__.py`
 - [ ] `rag/schemas.py` — Pydantic models: `RAGQuery`, `RAGResult`, `SearchResult`, `SourceChunk`
-- [ ] `rag/embedder.py` — load `paraphrase-multilingual-MiniLM-L12-v2`, expose `embed(texts)`
-- [ ] `rag/vector_store.py` — ChromaDB wrapper: init collections, `add_chunks()`, `query()`
+- [ ] `rag/embedder.py` — Voyage AI API wrapper, expose `embed(texts)`
+- [ ] `rag/vector_store.py` — Pinecone wrapper: init index/namespaces, `upsert_chunks()`, `query()`
 - [ ] `rag/retriever.py` — `search(query, collection, lang, top_k)` → list of `SourceChunk`
 - [ ] `rag/generator.py` — Claude API call with retrieved context → `RAGResult`
 - [ ] `rag/pipeline.py` — `ask(query, lang, sources)` orchestrating all above
-- [ ] Add `ANTHROPIC_API_KEY` and `CHROMA_DB_PATH` to `.env.example`
+- [ ] Add `ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`, `PINECONE_API_KEY` to `.env.example`
 - [ ] `tests/test_rag_pipeline.py` — unit tests with mock data
 
 ## Phase 2: Ingestion scripts
@@ -32,7 +32,7 @@ Goal: populate ChromaDB with real LDS content.
 - [ ] `scripts/ingest_handbook.py`
 - [ ] Add `make rag-ingest` target to Makefile
 - [ ] Add `python cli.py rag stats` CLI command
-- [ ] Add `data/chromadb/` to `.gitignore`
+- [ ] Nothing to gitignore — no local data files
 
 ## Phase 3: API routes
 
@@ -72,29 +72,26 @@ Goal: usable web interface.
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| Vector DB | ChromaDB embedded | Zero infra, persists to disk, free |
-| Embeddings | sentence-transformers multilingual | Local, free, Italian+English support |
+| Vector DB | Pinecone serverless free tier | 2 GB free, zero VPS disk usage |
+| Embeddings | Voyage AI API (`voyage-multilingual-2`) | Free 200M tokens/month, zero VPS RAM |
 | LLM | Claude claude-sonnet-4-6 | Best reasoning, citation quality |
 | Project location | Module inside hymns-generator repo | Reuse auth, infra, deployment |
 | Scraping scope | Italian only, 2015+ for conference | VPS disk/RAM constraint |
 | Liahona | Skip initially | Lowest priority; saves ~12–100 MB |
-| Ingestion location | Run locally, upload ChromaDB to VPS | Avoid OOM during embedding on small VPS |
+| Ingestion location | Run on dev machine, push to Pinecone | VPS never involved in ingestion |
 
-## Constraints
+## Constraints & approach
 
-**The server is a small VPS with very limited disk and RAM.** This is not an open question —
-it is a hard constraint that shapes all decisions:
+**The server is a small VPS.** All heavy work is outsourced to free external APIs:
 
-- Ingest Italian only to start (cuts storage ~50%)
-- Skip Liahona initially (lowest value/MB ratio)
-- Conference talks from 2015+ only
-- Target: ~135 MB total ChromaDB storage (see `data-sources.md`)
-- Load sentence-transformers model lazily, not at app startup
-- Do not load all ChromaDB collections at startup — open on demand
+- **Embeddings** → Voyage AI free tier (no model on VPS)
+- **Vector storage** → Pinecone free tier (no disk usage on VPS)
+- **LLM** → Anthropic API (already external)
+- **Ingestion** → run on dev machine, push to Pinecone (VPS never involved)
+
+The VPS runs only FastAPI + API calls. Its footprint for this module is ~0 MB disk, ~0 MB extra RAM.
 
 ## Open questions (resolve before/during implementation)
 
-1. **Anthropic API key** — does the user have one? Needed for Phase 1.
+1. **API keys** — need three: `ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`, `PINECONE_API_KEY`. All have free tiers.
 2. **Auth on RAG routes** — public access or require login?
-3. **Ingestion machine** — run ingestion scripts locally then upload ChromaDB, or run on VPS?
-   Running on VPS risks OOM during embedding; running locally is safer.
