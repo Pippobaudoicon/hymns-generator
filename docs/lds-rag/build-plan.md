@@ -73,7 +73,7 @@ Goal: usable web interface.
 | Decision | Choice | Rationale |
 |---|---|---|
 | Vector DB | Pinecone serverless free tier | 2 GB free, zero VPS disk usage |
-| Embeddings | Voyage AI API (`voyage-multilingual-2`) | Free 200M tokens/month, zero VPS RAM |
+| Embeddings | Voyage AI API (`voyage-4-large`) | Free 200M tokens/month, zero VPS RAM |
 | LLM | Claude claude-haiku-4-5 | Fast and cheap; upgrade to Sonnet for better quality if needed |
 | Project location | Module inside hymns-generator repo | Reuse auth, infra, deployment |
 | Scraping scope | Italian only, 2015+ for conference | VPS disk/RAM constraint |

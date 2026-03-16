@@ -8,7 +8,7 @@ import voyageai
 class Embedder:
     """Wraps the Voyage AI API for text embedding."""
 
-    MODEL = "voyage-multilingual-2"
+    MODEL = "voyage-4-large"
     DIMENSION = 1024
 
     def __init__(self, api_key: str | None = None):

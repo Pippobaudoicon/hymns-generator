@@ -23,10 +23,9 @@ Response with answer + cited sources
 
 ## Component choices
 
-### Embeddings: Voyage AI (`voyage-multilingual-2`)
+### Embeddings: Voyage AI (`voyage-4-large`)
 - **Free tier**: 200M tokens/month — far more than needed
-- Natively multilingual (Italian + English and many more)
-- State-of-the-art retrieval quality, better than MiniLM
+- Best general-purpose and multilingual retrieval quality
 - Pure API call — **zero RAM, zero disk on VPS**
 - Dimension: 1024
 - **Why not local sentence-transformers**: ~420 MB model in RAM, unacceptable on small VPS

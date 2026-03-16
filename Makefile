@@ -134,18 +134,21 @@ demo:
 
 # RAG module
 LANG ?= ita
-
+FROM-YEAR ?= 2015
 rag-ingest:
 	python scripts/ingest_scriptures.py --lang $(LANG)
-	python scripts/ingest_conference.py --lang $(LANG) --from-year 2015
+	python scripts/ingest_conference.py --lang $(LANG) --from-year $(FROM-YEAR)
 	python scripts/ingest_handbook.py --lang $(LANG)
 
 rag-ingest-dry:
 	python scripts/ingest_scriptures.py --lang $(LANG) --dry-run
-	python scripts/ingest_conference.py --lang $(LANG) --from-year 2015 --dry-run
+	python scripts/ingest_conference.py --lang $(LANG) --from-year $(FROM-YEAR) --dry-run
 	python scripts/ingest_handbook.py --lang $(LANG) --dry-run
-rag-scrape:
+rag-scrape-scriptures:
 	python scripts/ingest_scriptures.py --lang $(LANG) --scrape-only
+
+rag-scrape-conference:
+	python scripts/ingest_conference.py --lang $(LANG) --from-year $(FROM-YEAR) --scrape-only
 
 rag-stats:
 	python cli.py rag stats

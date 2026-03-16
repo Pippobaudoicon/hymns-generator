@@ -32,9 +32,11 @@ from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 
+load_dotenv()
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from rag.chunker import chunk_verses
@@ -212,7 +214,7 @@ def scrape_chapter_verses(volume_slug: str, book_slug: str, chapter: int, lang: 
         logger.warning(f"  Failed {url} after retries: {e}")
         return []
 
-    soup = BeautifulSoup(resp.text, "html.parser")
+    soup = BeautifulSoup(resp.content, "html.parser")
     verses = []
 
     # Try verse-marked elements first

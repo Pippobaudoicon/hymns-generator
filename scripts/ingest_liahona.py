@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
 """Ingest Liahona magazine articles into the RAG vector store.
 
-Scrapes articles from churchofjesuschrist.org, chunks them, embeds via
-Voyage AI, and upserts into Pinecone.
+Scrapes articles from churchofjesuschrist.org, saves them as JSON files
+(one per issue), then chunks, embeds, and upserts into Pinecone.
 
-Note: This source is low priority and optional per the build plan.
+Liahona articles don't change after publication, so JSON is saved locally
+and reused on subsequent runs — just like conference talks and scriptures.
+
+Saved to: data/liahona-json/<lang>/<year>-<month>.json
 
 Usage:
     python scripts/ingest_liahona.py --lang ita --from-year 2010
     python scripts/ingest_liahona.py --lang ita --from-year 2010 --dry-run
+    python scripts/ingest_liahona.py --lang ita --scrape-only
+    python scripts/ingest_liahona.py --lang ita --force-scrape
 """
 
 import argparse
+import json
 import logging
 import re
 import sys
@@ -20,7 +26,11 @@ from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
+load_dotenv()
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from rag.chunker import chunk_text
@@ -31,8 +41,43 @@ from rag.vector_store import VectorStore
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Paths & constants
+# ──────────────────────────────────────────────────────────────────────────────
+
+PROJECT_ROOT = Path(__file__).parent.parent
+JSON_DIR = PROJECT_ROOT / "data" / "liahona-json"
 BASE_URL = "https://www.churchofjesuschrist.org"
 MONTHS = [f"{m:02d}" for m in range(1, 13)]
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# HTTP session with retry
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _build_session() -> requests.Session:
+    """Build a requests Session with transport-level retry + backoff."""
+    session = requests.Session()
+    session.headers.update({"User-Agent": "LDS-RAG-Ingestion/1.0"})
+    retry = Retry(
+        total=4,
+        backoff_factor=3,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET"],
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+
+
+SESSION = _build_session()
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Scraping
+# ──────────────────────────────────────────────────────────────────────────────
 
 
 def get_issue_articles(year: int, month: str, lang: str) -> list[dict]:
@@ -41,18 +86,18 @@ def get_issue_articles(year: int, month: str, lang: str) -> list[dict]:
     logger.info(f"Fetching issue index: {url}")
 
     try:
-        resp = requests.get(url, timeout=30, headers={"User-Agent": "LDS-RAG-Ingestion/1.0"})
+        resp = SESSION.get(url, timeout=30)
         resp.raise_for_status()
     except requests.RequestException as e:
         logger.warning(f"Failed to fetch {url}: {e}")
         return []
 
-    soup = BeautifulSoup(resp.text, "html.parser")
+    soup = BeautifulSoup(resp.content, "html.parser")
     articles = []
 
     for link in soup.select("a[href*='/study/liahona/']"):
         href = link.get("href", "")
-        title = link.get_text(strip=True)
+        title = link.get_text(separator=", ", strip=True)
 
         if re.search(rf"/study/liahona/{year}/{month}/\w", href) and title:
             article_url = href.split("?")[0]
@@ -82,13 +127,13 @@ def scrape_article(article: dict, lang: str) -> dict | None:
     url = f"{article['url']}?lang={lang}"
 
     try:
-        resp = requests.get(url, timeout=30, headers={"User-Agent": "LDS-RAG-Ingestion/1.0"})
+        resp = SESSION.get(url, timeout=30)
         resp.raise_for_status()
     except requests.RequestException as e:
         logger.warning(f"Failed to fetch article {url}: {e}")
         return None
 
-    soup = BeautifulSoup(resp.text, "html.parser")
+    soup = BeautifulSoup(resp.content, "html.parser")
 
     body = soup.select_one("article") or soup.select_one(".body-block") or soup.select_one("main")
     if not body:
@@ -114,55 +159,132 @@ def scrape_article(article: dict, lang: str) -> dict | None:
     }
 
 
+def scrape_and_save_issue(year: int, month: str, lang: str, out_dir: Path) -> Path | None:
+    """Scrape all articles for one Liahona issue and save as JSON."""
+    out_path = out_dir / f"{year}-{month}.json"
+
+    articles = get_issue_articles(year, month, lang)
+    logger.info(f"  Found {len(articles)} articles for {year}/{month}")
+
+    if not articles:
+        return None
+
+    issue_data = {
+        "year": year,
+        "month": month,
+        "language": lang,
+        "articles": [],
+    }
+
+    for article in articles:
+        time.sleep(1)  # Rate limiting: 1 req/sec
+        article_data = scrape_article(article, lang)
+        if article_data:
+            issue_data["articles"].append(article_data)
+
+    if not issue_data["articles"]:
+        logger.warning(f"  No articles scraped for {year}/{month}")
+        return None
+
+    out_path.write_text(json.dumps(issue_data, ensure_ascii=False, indent=2), encoding="utf-8")
+    logger.info(f"  Saved → {out_path} ({len(issue_data['articles'])} articles)")
+    return out_path
+
+
+def scrape_issues(lang: str, from_year: int, to_year: int, force: bool = False) -> list[Path]:
+    """Scrape all Liahona issues in the year range, saving each as JSON."""
+    out_dir = JSON_DIR / lang
+    out_dir.mkdir(parents=True, exist_ok=True)
+    paths = []
+
+    for year in range(from_year, to_year + 1):
+        for month in MONTHS:
+            out_path = out_dir / f"{year}-{month}.json"
+            if out_path.exists() and not force:
+                logger.info(f"  {out_path.name} already exists, skipping (use --force-scrape to re-scrape)")
+                paths.append(out_path)
+                continue
+
+            result = scrape_and_save_issue(year, month, lang, out_dir)
+            if result:
+                paths.append(result)
+
+    return paths
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# JSON → RAG chunks
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def json_to_chunks(json_paths: list[Path], lang: str) -> list[dict]:
+    """Read Liahona JSON files and produce RAG chunks."""
+    all_chunks = []
+
+    for path in json_paths:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        year = data["year"]
+        month = data["month"]
+
+        for article_data in data.get("articles", []):
+            text_chunks = chunk_text(article_data["text"], max_tokens=400, overlap_tokens=50)
+
+            for i, chunk_text_str in enumerate(text_chunks):
+                chunk_id = (
+                    f"liahona-{lang}-{year}-{month}-"
+                    f"{article_data['title'][:30]}-{i}".replace(" ", "_").lower()
+                )
+                chunk_id = re.sub(r"[^a-z0-9_-]", "", chunk_id)
+
+                all_chunks.append(
+                    {
+                        "id": chunk_id,
+                        "text": chunk_text_str,
+                        "metadata": {
+                            "text": chunk_text_str,
+                            "source": SourceType.LIAHONA.value,
+                            "title": article_data["title"],
+                            "speaker": article_data["author"],
+                            "date": f"{year}-{month}",
+                            "url": article_data["url"],
+                            "language": lang,
+                        },
+                    }
+                )
+
+    return all_chunks
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Main
+# ──────────────────────────────────────────────────────────────────────────────
+
+
 def main():
     parser = argparse.ArgumentParser(description="Ingest Liahona articles into RAG vector store")
     parser.add_argument("--lang", choices=["ita", "eng"], default="ita")
     parser.add_argument("--from-year", type=int, default=2010)
-    parser.add_argument("--to-year", type=int, default=2025)
+    parser.add_argument("--to-year", type=int, default=2026)
     parser.add_argument("--dry-run", action="store_true", help="Report stats without embedding/upserting")
+    parser.add_argument("--scrape-only", action="store_true", help="Only scrape and save JSON, no embedding")
+    parser.add_argument("--force-scrape", action="store_true", help="Re-scrape even if JSON exists")
     args = parser.parse_args()
 
-    all_chunks = []
+    # Step 1: Get JSON files (scrape or use cached)
+    logger.info(f"Getting {args.lang} Liahona articles ({args.from_year}-{args.to_year})...")
+    json_paths = scrape_issues(args.lang, args.from_year, args.to_year, force=args.force_scrape)
 
-    for year in range(args.from_year, args.to_year + 1):
-        for month in MONTHS:
-            articles = get_issue_articles(year, month, args.lang)
-            if not articles:
-                continue
+    if args.scrape_only:
+        print(f"\nJSON files saved to: {JSON_DIR / args.lang}/")
+        for p in json_paths:
+            size_kb = p.stat().st_size / 1024
+            data = json.loads(p.read_text(encoding="utf-8"))
+            num_articles = len(data.get("articles", []))
+            print(f"  {p.name} ({size_kb:.0f} KB, {num_articles} articles)")
+        return
 
-            logger.info(f"  Found {len(articles)} articles for {year}/{month}")
-
-            for article in articles:
-                time.sleep(1)  # Rate limiting
-                article_data = scrape_article(article, args.lang)
-                if not article_data:
-                    continue
-
-                text_chunks = chunk_text(article_data["text"], max_tokens=400, overlap_tokens=50)
-
-                for i, chunk_text_str in enumerate(text_chunks):
-                    chunk_id = (
-                        f"liahona-{args.lang}-{year}-{month}-"
-                        f"{article_data['title'][:30]}-{i}".replace(" ", "_").lower()
-                    )
-                    chunk_id = re.sub(r"[^a-z0-9_-]", "", chunk_id)
-
-                    all_chunks.append(
-                        {
-                            "id": chunk_id,
-                            "text": chunk_text_str,
-                            "metadata": {
-                                "text": chunk_text_str,
-                                "source": SourceType.LIAHONA.value,
-                                "title": article_data["title"],
-                                "speaker": article_data["author"],
-                                "date": f"{year}-{month}",
-                                "url": article_data["url"],
-                                "language": args.lang,
-                            },
-                        }
-                    )
-
+    # Step 2: Convert JSON → chunks
+    all_chunks = json_to_chunks(json_paths, args.lang)
     logger.info(f"Total chunks: {len(all_chunks)}")
 
     if args.dry_run:
@@ -170,6 +292,7 @@ def main():
         est_tokens = total_chars / 4
         print(f"\n--- Dry Run Report ---")
         print(f"Language: {args.lang}")
+        print(f"JSON dir: {JSON_DIR / args.lang}")
         print(f"Years: {args.from_year}-{args.to_year}")
         print(f"Total chunks: {len(all_chunks)}")
         print(f"Total characters: {total_chars:,}")
@@ -181,7 +304,7 @@ def main():
             print(f"  Text: {all_chunks[0]['text'][:200]}...")
         return
 
-    # Embed
+    # Step 3: Embed
     embedder = Embedder()
     logger.info("Embedding chunks...")
 
@@ -193,7 +316,7 @@ def main():
         all_embeddings.extend(batch_embs)
         logger.info(f"  Embedded {min(i + batch_size, len(all_chunks))}/{len(all_chunks)}")
 
-    # Upsert
+    # Step 4: Upsert to Pinecone
     store = VectorStore()
     ids = [c["id"] for c in all_chunks]
     metadata = [c["metadata"] for c in all_chunks]

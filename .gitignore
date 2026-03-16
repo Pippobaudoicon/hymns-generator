@@ -124,6 +124,8 @@ pm2.log
 data/*.json
 data/*.csv
 data/scriptures-json/
+data/conference-json/
+data/liahona-json/
 !data/.gitkeep
 
 # Temporary files

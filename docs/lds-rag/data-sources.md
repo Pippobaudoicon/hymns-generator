@@ -44,10 +44,12 @@
 
 ## Source 4: General Handbook
 
-**Strategy**: Scrape section by section from `churchofjesuschrist.org/study/manual/general-handbook`
+**Strategy**: Discover sections from the TOC page, then scrape each section individually.
 
-- URL pattern: `https://www.churchofjesuschrist.org/study/manual/general-handbook/{section}?lang=ita`
-- Sections: numbered 0 through ~38 (Introduction through appendices)
+- TOC page: `https://www.churchofjesuschrist.org/study/manual/general-handbook?lang=ita`
+- Section URL pattern: `https://www.churchofjesuschrist.org/study/manual/general-handbook/{slug}?lang=ita`
+  (e.g. `0-introductory-overview`, `1-god-s-plan-and-your-role-in-the-work-of-salvation-and-exaltation`)
+- Section slugs are discovered dynamically from the TOC page, not hardcoded
 - Languages: `lang=ita`, `lang=eng`
 - Rate limiting: 1 request/second
 - Script: `scripts/ingest_handbook.py`

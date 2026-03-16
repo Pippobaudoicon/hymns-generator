@@ -11,7 +11,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from rag.schemas import Language, RAGQuery, RAGResult, SearchResult, SourceChunk, SourceType
 
-
 # ---------------------------------------------------------------------------
 # Schema tests
 # ---------------------------------------------------------------------------
@@ -129,7 +128,7 @@ class TestEmbedder:
         assert len(result[0]) == 1024
         mock_client.embed.assert_called_once_with(
             ["text 1", "text 2"],
-            model="voyage-multilingual-2",
+            model="voyage-4-large",
             input_type="document",
         )
 
@@ -147,7 +146,7 @@ class TestEmbedder:
         assert len(result) == 1024
         mock_client.embed.assert_called_once_with(
             ["What is faith?"],
-            model="voyage-multilingual-2",
+            model="voyage-4-large",
             input_type="query",
         )
 
